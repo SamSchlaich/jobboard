@@ -222,6 +222,7 @@
   .report td.r, .report th.r { text-align:right; white-space:nowrap; }
   .report td em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; margin-right:6px; }
   .report tr.miss td { color:var(--bad); }
+  .report tr.pause td { background:var(--warn-bg); border-bottom-color:var(--warn-bg); font-size:12.5px; padding-top:5px; padding-bottom:5px; }
   .report .note { padding:10px 12px; font-size:13.5px; white-space:pre-wrap; }
   .report .lt { display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px 4px; gap:10px; }
   .report .lt h3 { font-size:19px; font-weight:700; letter-spacing:.02em; }
@@ -545,6 +546,10 @@ function listPauses(job, code){ // gaps between runs, with the reason given when
   r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); });
   return out;
 }
+function pausesInPhase(pauses, st, pi){ // a pause belongs to the phase that was open when it started; pi = -1 → after every phase was done
+  const owner = p => { for (let i = 0; i < st.length; i++) { const s = st[i]; const from = s.startAt, to = s.endAt; if (from == null) return -1; if (p.from >= from && (to == null || p.from < to)) return i; } return -1; };
+  return pauses.filter(p => owner(p) === pi);
+}
 function listActiveTotal(job, code){ if (!job.arrivedAt) return null; return activeBetween(runsOf(job, code), job.arrivedAt, job.finishedAt || Date.now()); }
 function listPausedTotal(job, code){ return listPauses(job, code).reduce((a,p) => a + p.ms, 0); }
 function phaseStats(job, code){
@@ -603,7 +608,10 @@ function fullText(job){
   jobLists(job).forEach(code => {
     const S = LISTS[code]; const st = phaseStats(job, code); const p = listProgress(job, code);
     L.push(""); L.push(`${S.title.toUpperCase()} — ${p.d} of ${p.t} phases · ${fmtD(listActiveTotal(job, code))} active · ${fmtD(listPausedTotal(job, code))} paused`);
-    S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : "NOT DONE"}`); });
+    const pauses = listPauses(job, code);
+    S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : "NOT DONE"}`);
+      pausesInPhase(pauses, st, pi).forEach(p => L.push(`   ❚❚ paused ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${p.reason || "no reason given"}`)); });
+    pausesInPhase(pauses, st, -1).forEach(p => L.push(` ❚❚ paused after last phase ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${p.reason || "no reason given"}`));
   });
   return L.join("\n");
 }
@@ -904,8 +912,10 @@ function renderReport(){
     const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code); const pauses = listPauses(job, code); const pt = listPausedTotal(job, code);
     return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listActiveTotal(job, code))} active${pt ? `<span class="pill warn" style="margin-left:6px">paused ${fmtD(pt)}</span>` : ""}</div></div>
      <div style="overflow-x:auto"><table><thead><tr><th>Phase</th><th class="r">Start → done</th><th class="r">Active</th></tr></thead><tbody>
-     ${S.phases.map((ph, pi) => { const s = st[pi]; return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>`; }).join("")}</tbody></table></div>
-     ${pauses.length ? `<div class="note"><b>Pauses</b>${pauses.map(p => `<div class="noteline" style="padding:6px 0"><div class="w num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)} · ${fmtD(p.ms)}</div><div class="t">${esc(p.reason || "no reason given")}</div></div>`).join("")}</div>` : ""}</div>`;
+     ${S.phases.map((ph, pi) => { const s = st[pi]; const inPhase = pausesInPhase(pauses, st, pi);
+       return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>` +
+         inPhase.map(p => `<tr class="pause"><td><span class="pill warn">❚❚ paused ${fmtD(p.ms)}</span> <span style="color:var(--warn)">${esc(p.reason || "no reason given")}</span></td><td class="r num" style="color:var(--warn)">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</td><td class="r num" style="color:var(--warn)">−${fmtD(p.ms)}</td></tr>`).join(""); }).join("")}</tbody></table></div>
+     ${pausesInPhase(pauses, st, -1).length ? `<div class="note" style="color:var(--warn)">${pausesInPhase(pauses, st, -1).map(p => `❚❚ Paused after the last phase ${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${esc(p.reason || "no reason given")}`).join("<br>")}</div>` : ""}</div>`;
   }).join("");
   app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="report stack">
