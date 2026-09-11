@@ -151,6 +151,16 @@
   .panehead h2 { font-size:24px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; line-height:1; }
   .panehead .c { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; color:var(--muted); white-space:nowrap; text-align:right; }
   .panehead .c small { display:block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+  .clock { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 13px; border-radius:12px; margin-bottom:12px; box-shadow:var(--shadow); background:var(--surface); border:2px solid transparent; }
+  .clock .cl b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; letter-spacing:.03em; text-transform:uppercase; display:block; line-height:1; }
+  .clock .cl small { display:block; color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .clock.running { border-color:var(--good); } .clock.running .cl b { color:var(--good); }
+  .clock.paused { border-color:var(--warn); background:var(--warn-bg); } .clock.paused .cl b { color:var(--warn); } .clock.paused .cl small { color:var(--warn); }
+  .clock.idle .cl b { color:var(--faint); }
+  .clock button { flex:0 0 auto; }
+  .tab .p.paused { color:var(--warn); font-weight:700; }
+  .reasons { display:flex; flex-direction:column; gap:8px; }
+  .reasons button { text-align:left; padding:13px 14px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); font-weight:600; font-size:15px; }
   .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; border:2px solid transparent; }
   .phase.current { border-color:var(--red); }
   .band { background:var(--band); color:var(--band-text); padding:9px 13px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
@@ -238,7 +248,7 @@
 
 <script>
 /* =====================================================================
-   3X JOB BOARD v2 · offline job runner for 3X Detailing
+   3X JOB BOARD v3 · offline job runner for 3X Detailing
    Phase-level check-offs · one job per car · all data on this phone.
    ===================================================================== */
 
@@ -461,9 +471,14 @@ const KEY = "3x_jobboard_v1";
 let DB = load();
 function load(){
   let d = null; try { d = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
-  if (!d) return { v:2, users:[], jobs:[], session:null, theme:"auto" };
+  if (!d) return { v:3, users:[], jobs:[], session:null, theme:"auto" };
   if (d.v === 1) migrateV1(d);
+  if (d.v === 2) migrateV2(d);
   return d;
+}
+function migrateV2(d){ // v3: per-checklist clocks (runs = active intervals)
+  d.jobs.forEach(job => Object.values(job.lists).forEach(L => { if (!L.runs) L.runs = job.arrivedAt ? [{ start:job.arrivedAt, end:job.finishedAt || null }] : []; }));
+  d.v = 3;
 }
 function migrateV1(d){
   d.jobs.forEach(job => {
@@ -480,7 +495,7 @@ function migrateV1(d){
     });
     delete job.services;
   });
-  d.v = 2;
+  d.v = 2; migrateV2(d);
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ toast("Could not save — storage full or blocked"); } }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -517,19 +532,38 @@ function setTimeOfDay(baseTs, hhmm){
 // ---------- job computations ----------
 const jobLists = job => Object.keys(job.lists).length ? LIST_ORDER.filter(c => job.lists[c]) : [];
 const jobServiceNames = job => job.serviceIds.map(id => (SVC[id] || {name:id}).name).concat((job.extraLists || []).map(c => LISTS[c].title));
+// --- per-checklist clock: runs = [{start, end|null, reason}] ; active time only counts inside runs ---
+const runsOf = (job, code) => job.lists[code].runs || (job.lists[code].runs = []);
+function activeBetween(runs, from, to){ if (from == null || to == null || to <= from) return 0; let s = 0; for (const r of runs){ const a = Math.max(from, r.start), b = Math.min(to, r.end == null ? to : r.end); if (b > a) s += b - a; } return s; }
+function listRunning(job, code){ const r = runsOf(job, code); return !!(r.length && r[r.length-1].end == null); }
+function listPausedSince(job, code){ const r = runsOf(job, code); return (r.length && r[r.length-1].end != null && !job.finishedAt) ? r[r.length-1] : null; }
+function ensureRuns(job){ if (!job.arrivedAt) return; jobLists(job).forEach(c => { const r = runsOf(job, c); if (!r.length) r.push({ start:job.arrivedAt, end:null }); }); }
+function pauseList(job, code, reason){ const r = runsOf(job, code); const last = r[r.length-1]; if (last && last.end == null) { last.end = Date.now(); last.reason = reason; } }
+function resumeList(job, code){ const r = runsOf(job, code); if (!r.length || r[r.length-1].end != null) r.push({ start:Date.now(), end:null }); }
+function listPauses(job, code){ // gaps between runs, with the reason given when the pause started
+  const r = runsOf(job, code); const out = []; const endCap = job.finishedAt || Date.now();
+  r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); });
+  return out;
+}
+function listActiveTotal(job, code){ if (!job.arrivedAt) return null; return activeBetween(runsOf(job, code), job.arrivedAt, job.finishedAt || Date.now()); }
+function listPausedTotal(job, code){ return listPauses(job, code).reduce((a,p) => a + p.ms, 0); }
 function phaseStats(job, code){
-  const L = job.lists[code]; const defs = LISTS[code].phases; const out = []; let current = -1;
+  const L = job.lists[code]; const defs = LISTS[code].phases; const runs = runsOf(job, code); const out = []; let current = -1;
   defs.forEach((ph, pi) => {
     const endAt = L.phases[pi] || null;
     const prevEnd = pi === 0 ? (job.arrivedAt || null) : (L.phases[pi-1] || null);
-    const st = { pi, complete: !!endAt, endAt, startAt: prevEnd, duration: (endAt && prevEnd) ? endAt - prevEnd : null, running:false };
-    if (!endAt && current < 0) { current = pi; st.running = !!prevEnd && !job.finishedAt; }
+    const st = { pi, complete: !!endAt, endAt, startAt: prevEnd, duration: (endAt && prevEnd) ? activeBetween(runs, prevEnd, endAt) : null, running:false, elapsed:null };
+    if (!endAt && current < 0) { current = pi; st.running = !!prevEnd && !job.finishedAt; if (st.running) st.elapsed = activeBetween(runs, prevEnd, Date.now()); }
     out.push(st);
   });
   return out;
 }
 function listProgress(job, code){ const t = LISTS[code].phases.length; const d = Object.keys(job.lists[code].phases).length; return {d, t}; }
-function listSpan(job, code){ const v = Object.values(job.lists[code].phases); if (!v.length) return null; const start = job.arrivedAt || Math.min(...v); return Math.max(...v) - start; }
+function listSpan(job, code){ // active time from arrival to the last completed phase (or now while the job is open)
+  const v = Object.values(job.lists[code].phases); if (!job.arrivedAt && !v.length) return null;
+  const start = job.arrivedAt || Math.min(...v); const end = v.length ? Math.max(...v) : (job.finishedAt || Date.now());
+  const lp = listProgress(job, code); return activeBetween(runsOf(job, code), start, lp.d === lp.t ? end : (job.finishedAt || Date.now()));
+}
 function jobProgress(job){ let d=0,t=0; jobLists(job).forEach(c => { const p = listProgress(job,c); d += p.d; t += p.t; }); return {d,t,pct: t ? Math.round(100*d/t) : 0}; }
 function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; jobLists(job).forEach(c => Object.values(job.lists[c].phases).forEach(ts => { if (ts > m) m = ts; })); return m; }
 function jobTotal(job){ if (!job.arrivedAt) return null; return (job.finishedAt || Date.now()) - job.arrivedAt; }
@@ -556,15 +590,19 @@ function summaryText(job){
   L.push(`Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · ${fmtD(jobTotal(job))} on site`);
   L.push(`Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`);
   if (job.finishNote) L.push(`⚑ Finished with open phases: ${job.finishNote}`);
+  const clocks = jobLists(job).map(code => { const p = listPausedTotal(job, code); return `${LISTS[code].title} ${fmtD(listActiveTotal(job, code))} active${p ? ` (paused ${fmtD(p)})` : ""}`; });
+  if (clocks.length) L.push(`Checklists: ${clocks.join(" · ")}`);
   const notes = allNotes(job);
   if (notes.length) { L.push(""); L.push("NOTES"); notes.forEach(n => L.push(`• ${n.where}: ${n.what}`)); } else { L.push(""); L.push("No notes."); }
+  const pauses = jobLists(job).flatMap(code => listPauses(job, code).map(p => `• ${LISTS[code].title} paused ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)})${p.reason ? ": " + p.reason : ""}`));
+  if (pauses.length) { L.push(""); L.push("PAUSES"); pauses.forEach(x => L.push(x)); }
   return L.join("\n");
 }
 function fullText(job){
-  const L = [summaryText(job), "", "PHASE TIMING"];
+  const L = [summaryText(job), "", "PHASE TIMING (active time only)"];
   jobLists(job).forEach(code => {
     const S = LISTS[code]; const st = phaseStats(job, code); const p = listProgress(job, code);
-    L.push(""); L.push(`${S.title.toUpperCase()} — ${p.d} of ${p.t} phases · ${fmtD(listSpan(job, code))}`);
+    L.push(""); L.push(`${S.title.toUpperCase()} — ${p.d} of ${p.t} phases · ${fmtD(listActiveTotal(job, code))} active · ${fmtD(listPausedTotal(job, code))} paused`);
     S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : "NOT DONE"}`); });
   });
   return L.join("\n");
@@ -700,7 +738,7 @@ function renderNewJob(){
     if (!nj.client.trim() || !nj.vehicle.trim()) { $("#n_err").textContent = "Client and vehicle are required."; return; }
     if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
     const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
-    listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"" });
+    listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"", runs:[] });
     DB.jobs.push(job); save(); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
@@ -721,7 +759,7 @@ function renderJob(){
      <div class="tbox"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span></div></div>
    </div></div>
    <div class="main noscroll">
-     ${lists.length > 1 ? `<div class="tabs">${lists.map((c,i) => { const lp = listProgress(job,c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(LISTS[c].title)}</div><div class="p num">${lp.d}/${lp.t} phases</div><div class="ul"></div></button>`; }).join("")}</div>` : ""}
+     ${lists.length > 1 ? `<div class="tabs">${lists.map((c,i) => { const lp = listProgress(job,c); const pz = listPausedSince(job,c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(LISTS[c].title)}</div><div class="p num ${pz ? "paused" : ""}" data-tabp="${c}">${pz ? "❚❚ paused" : `${lp.d}/${lp.t} phases`}</div><div class="ul"></div></button>`; }).join("")}</div>` : ""}
      <div class="panes" id="panes">${lists.map(c => renderPane(job, c)).join("")}</div>
    </div>
    <div class="actionbar"><button class="narrow" id="notesbtn">Notes${allNotes(job).length ? ` · ${allNotes(job).length}` : ""}</button><button class="primary" id="finish">${p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`}</button></div>`;
@@ -733,27 +771,36 @@ function renderJob(){
   let raf = 0; panes.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }); });
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
   $("#arrive").onclick = () => {
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); save(); toast("Arrival stamped " + fmtT(job.arrivedAt)); renderJob(); return; }
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); save(); toast("Arrival stamped " + fmtT(job.arrivedAt) + " · all checklists running"); renderJob(); return; }
     const v = prompt("Arrival time is " + fmtT(job.arrivedAt) + ".\nEnter a corrected time (e.g. 7:05 am) or leave blank to keep it:");
     if (v == null || !v.trim()) return; const ts = setTimeOfDay(job.arrivedAt, v); if (!ts) { toast("Couldn't read that time"); return; }
-    job.arrivedAt = ts; save(); renderJob();
+    const old = job.arrivedAt; job.arrivedAt = ts;
+    jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job);
+    save(); renderJob();
   };
   panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
   $("#notesbtn").onclick = () => openNotes(job);
   $("#finish").onclick = () => finishJob(job);
   setLive(() => {
     const el = app.querySelector('[data-live="total"]'); if (el) el.textContent = fmtD(jobTotal(job));
-    app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running && s.startAt) e.textContent = fmtD(Date.now() - s.startAt); });
+    app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running) e.textContent = fmtD(s.elapsed); });
+    app.querySelectorAll("[data-live-clock]").forEach(e => { const code = e.dataset.liveClock; const pz = listPausedSince(job, code); e.textContent = pz ? `paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + pz.reason : ""}` : `${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · paused " + fmtD(listPausedTotal(job, code)) + " total" : ""}`; });
   });
-  if (ui.sheet) openNotes(job);
+  if (ui.sheet === "notes") openNotes(job);
 }
 function renderPane(job, code){
   const S = LISTS[code]; const st = phaseStats(job, code); const L = job.lists[code]; const lp = listProgress(job, code);
   return `<div class="pane" data-code="${code}">
-   <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases<small>${fmtD(listSpan(job, code))} so far</small></div></div>
-   ${S.phases.map((ph, pi) => { const s = st[pi]; const cur = !s.complete && st.findIndex(x => !x.complete) === pi;
+   <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases<small>${fmtD(listSpan(job, code))} active</small></div></div>
+   ${(() => { const pz = listPausedSince(job, code); const running = listRunning(job, code);
+      if (!job.arrivedAt) return `<div class="clock idle"><div class="cl"><b>Clock not started</b><small>Starts when you tap Arrived</small></div></div>`;
+      if (job.finishedAt) return "";
+      if (pz) return `<div class="clock paused"><div class="cl"><b>❚❚ Paused</b><small data-live-clock="${code}">paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + pz.reason : ""}</small></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`;
+      if (running) return `<div class="clock running"><div class="cl"><b>● Running</b><small data-live-clock="${code}">${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · paused " + fmtD(listPausedTotal(job, code)) + " total" : ""}</small></div><button class="btn small" data-pause="${code}">Pause</button></div>`;
+      return `<div class="clock idle"><div class="cl"><b>Clock stopped</b><small>Tap Resume when work on this checklist starts</small></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`; })()}
+   ${S.phases.map((ph, pi) => { const s = st[pi]; const cur = !s.complete && st.findIndex(x => !x.complete) === pi; const pz = listPausedSince(job, code);
      const right = s.complete ? `<div class="d done num">${fmtD(s.duration)}</div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}</div>`
-       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${fmtD(Date.now() - s.startAt)}</div><div class="w">in progress</div>`
+       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${fmtD(s.elapsed)}</div><div class="w">${pz ? "paused" : "in progress"}</div>`
        : `<div class="d idle">—</div><div class="w">${cur ? "waiting on arrival" : "up next"}</div>`;
      return `<div class="phase ${s.complete ? "done" : ""} ${cur ? "current" : ""}"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${esc(ph[2])}</small></div><div class="r">${right}</div></div>
        ${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
@@ -770,7 +817,7 @@ function refreshPane(job, code){
   const tmp = document.createElement("div"); tmp.innerHTML = renderPane(job, code); const fresh = tmp.firstElementChild;
   old.replaceWith(fresh); fresh.scrollTop = top; panes.scrollLeft = ui.pane * panes.clientWidth;
   const p = jobProgress(job); const lists = jobLists(job);
-  app.querySelectorAll("[data-pane]").forEach(b => { const c = lists[+b.dataset.pane]; const lp = listProgress(job,c); b.querySelector(".p").textContent = `${lp.d}/${lp.t} phases`; });
+  app.querySelectorAll("[data-pane]").forEach(b => { const c = lists[+b.dataset.pane]; const lp = listProgress(job,c); const pz = listPausedSince(job,c); const el = b.querySelector(".p"); el.textContent = pz ? "❚❚ paused" : `${lp.d}/${lp.t} phases`; el.classList.toggle("paused", !!pz); });
   $("#prog").innerHTML = `${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span>`;
   $("#finish").textContent = p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`;
   $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : "");
@@ -787,10 +834,12 @@ function wirePane(job, pane){
       const ts = setTimeOfDay(L.phases[pi], v); if (!ts) { toast("Couldn't read that time"); return; }
       L.phases[pi] = ts; save(); refreshPane(job, code); return;
     }
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); }
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); }
     L.phases[pi] = Date.now(); save(); refreshPane(job, code);
     const next = pane.querySelector(`.phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
   });
+  pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
+  pane.querySelectorAll("[data-resume]").forEach(el => el.onclick = () => { resumeList(job, el.dataset.resume); save(); toast(LISTS[el.dataset.resume].title + " running"); refreshPane(job, el.dataset.resume); });
   pane.querySelectorAll("[data-flag]").forEach(el => el.onclick = () => {
     const [code, k] = el.dataset.flag.split(":"); const L = job.lists[code];
     const v = prompt("Note on this step (issue found, redo, upcharge, etc.). Leave blank to remove:", L.flags[k] || "");
@@ -798,8 +847,24 @@ function wirePane(job, pane){
   });
   pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : ""); });
 }
+const PAUSE_REASONS = ["Both of us on the other checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
+function openPause(job, code){
+  const old = $("#sheet"); if (old) old.remove();
+  const html = `<div class="sheetwrap" id="sheet"><div class="sheet">
+    <div class="sh"><h2>Pause · ${esc(LISTS[code].title)}</h2><button class="btn small" id="sheetclose">Cancel</button></div>
+    <div class="sb"><div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div>
+    <div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div></div></div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+  const sheet = $("#sheet"); const close = () => sheet.remove();
+  $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
+  sheet.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => {
+    let reason = b.dataset.reason;
+    if (reason === "__other") { const v = prompt("Why is this checklist paused?"); if (v == null || !v.trim()) return; reason = v.trim(); }
+    pauseList(job, code, reason); save(); close(); toast(LISTS[code].title + " paused"); refreshPane(job, code);
+  });
+}
 function openNotes(job){
-  ui.sheet = true;
+  ui.sheet = "notes";
   const old = $("#sheet"); if (old) old.remove();
   const notes = allNotes(job).filter(n => n.kind === "step");
   const lists = jobLists(job);
@@ -824,8 +889,10 @@ function finishJob(job){
     const v = prompt(`${p.t - p.d} phase(s) are not marked complete. Every phase should be done before signing off.\n\nTo finish anyway, write why (this goes on the report):`);
     if (v == null || !v.trim()) return; job.finishNote = v.trim();
   }
-  if (!job.arrivedAt) job.arrivedAt = job.createdAt;
-  job.finishedAt = Date.now(); job.status = "done"; save(); toast("Signed off · " + fmtD(jobTotal(job)));
+  if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
+  job.finishedAt = Date.now(); job.status = "done";
+  jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
+  save(); toast("Signed off · " + fmtD(jobTotal(job)));
   go("report", {jobId: job.id});
 }
 
@@ -834,10 +901,11 @@ function renderReport(){
   const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
   const notes = allNotes(job);
   const rows = jobLists(job).map(code => {
-    const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code);
-    return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listSpan(job, code))}</div></div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Phase</th><th class="r">Start → done</th><th class="r">Took</th></tr></thead><tbody>
-     ${S.phases.map((ph, pi) => { const s = st[pi]; return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+    const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code); const pauses = listPauses(job, code); const pt = listPausedTotal(job, code);
+    return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listActiveTotal(job, code))} active${pt ? `<span class="pill warn" style="margin-left:6px">paused ${fmtD(pt)}</span>` : ""}</div></div>
+     <div style="overflow-x:auto"><table><thead><tr><th>Phase</th><th class="r">Start → done</th><th class="r">Active</th></tr></thead><tbody>
+     ${S.phases.map((ph, pi) => { const s = st[pi]; return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>`; }).join("")}</tbody></table></div>
+     ${pauses.length ? `<div class="note"><b>Pauses</b>${pauses.map(p => `<div class="noteline" style="padding:6px 0"><div class="w num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)} · ${fmtD(p.ms)}</div><div class="t">${esc(p.reason || "no reason given")}</div></div>`).join("")}</div>` : ""}</div>`;
   }).join("");
   app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="report stack">
@@ -881,7 +949,7 @@ function renderHistory(){
      <div class="seg"><button class="${!mine ? "on" : ""}" data-f="all">Whole team</button><button class="${mine ? "on" : ""}" data-f="mine">My jobs</button></div>
      <div class="statrow"><button class="stat ${det === "jobs" ? "on" : ""}" data-det="jobs"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></button><button class="stat ${det === "avg" ? "on" : ""}" data-det="avg"><div class="v num">${fmtD(avg)}</div><div class="k">Avg time on site</div></button><button class="stat ${det === "fastest" ? "on" : ""}" data-det="fastest"><div class="v num">${fastest ? fmtD(jobTotal(fastest)) : "—"}</div><div class="k">Fastest job${fastest ? " · " + esc(fastest.vehicle) : ""}</div></button></div>
      ${detail}
-     ${Object.keys(byList).length ? `<div class="sect-title"><h2>By checklist</h2><span class="s" style="color:var(--muted);font-size:12px">arrival → last phase</span></div><div class="card">${LIST_ORDER.filter(c => byList[c]).map(c => { const a = byList[c]; return `<button class="rowitem ${det === "list:"+c ? "on" : ""}" data-det="list:${c}" style="${det === "list:"+c ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(LISTS[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"} · tap to see each one</div></div><div class="big num">${fmtD(a.reduce((x,y) => x+y.ms, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>`; }).join("")}</div>` : ""}
+     ${Object.keys(byList).length ? `<div class="sect-title"><h2>By checklist</h2><span class="s" style="color:var(--muted);font-size:12px">active time, pauses excluded</span></div><div class="card">${LIST_ORDER.filter(c => byList[c]).map(c => { const a = byList[c]; return `<button class="rowitem ${det === "list:"+c ? "on" : ""}" data-det="list:${c}" style="${det === "list:"+c ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(LISTS[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"} · tap to see each one</div></div><div class="big num">${fmtD(a.reduce((x,y) => x+y.ms, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>`; }).join("")}</div>` : ""}
      <div class="sect-title"><h2>All finished jobs</h2></div>
      ${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
    </div></div>`;
@@ -950,13 +1018,13 @@ function renderSettings(){
        <div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>
        ${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}
      </div></div>
-     <div class="hint">3X Job Board v2 · checklists rev 09/11/2026</div>
+     <div class="hint">3X Job Board v3 · checklists rev 09/11/2026</div>
    </div></div>`;
   wireNav();
   app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
   $("#export").onclick = async () => { const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
-  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
+  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); if (d.v === 2) migrateV2(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
   const w = $("#wipe"); if (w) w.onclick = () => { if (confirm("Erase all accounts, jobs and timing on this phone?") && confirm("Really erase? This cannot be undone.")) { localStorage.removeItem(KEY); location.reload(); } };
 }
 
