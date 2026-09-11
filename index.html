@@ -14,7 +14,7 @@
     --bg:#F3F3F5; --surface:#FFFFFF; --surface-2:#F8F8FA; --line:#E3E3E8; --line-2:#D3D3DA;
     --text:#18181B; --muted:#6E6E78; --faint:#A0A0AA;
     --good:#1B7A3A; --good-bg:#E6F4EA; --warn:#B45309; --warn-bg:#FEF3E2; --bad:#B91C1C;
-    --band:#0A0A0A; --band-text:#FAFAFA; --band-sub:#B8B8C0;
+    --band:#0A0A0A; --band-text:#FAFAFA; --band-sub:#B8B8C0; --band-done:#123D22;
     --chip:#ECECF0; --shadow:0 1px 2px rgba(10,10,10,.06), 0 4px 14px rgba(10,10,10,.05);
     --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
     color-scheme: light;
@@ -24,7 +24,7 @@
       --bg:#111114; --surface:#1B1B1F; --surface-2:#232328; --line:#2B2B31; --line-2:#3A3A42;
       --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
       --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
-      --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --chip:#2A2A30;
+      --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --band-done:#0F2E1A; --chip:#2A2A30;
       --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
       color-scheme: dark;
     }
@@ -33,7 +33,7 @@
     --bg:#111114; --surface:#1B1B1F; --surface-2:#232328; --line:#2B2B31; --line-2:#3A3A42;
     --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
     --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
-    --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --chip:#2A2A30;
+    --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --band-done:#0F2E1A; --chip:#2A2A30;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
     color-scheme: dark;
   }
@@ -46,20 +46,19 @@
   h1,h2,h3 { margin:0; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; text-wrap:balance; }
   .num { font-variant-numeric: tabular-nums; }
   .eyebrow { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
-  a { color:inherit; }
   :focus-visible { outline:2px solid var(--red); outline-offset:2px; }
 
   /* ---------- app frame ---------- */
   #app { display:flex; flex-direction:column; height:100dvh; }
-  .topbar { background:var(--ink); color:#FAFAFA; padding:calc(10px + var(--safe-t)) 14px 10px; flex:0 0 auto; }
+  #app > * { flex-shrink:0; }
+  .topbar { background:var(--ink); color:#FAFAFA; padding:calc(10px + var(--safe-t)) 14px 10px; }
   .topbar .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:13px; letter-spacing:.16em; }
   .topbar .brand b { color:var(--red); }
   .topbar .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .topbar h1 { font-size:22px; font-weight:700; letter-spacing:.01em; line-height:1.1; margin-top:2px; }
   .topbar .sub { color:#A9A9B3; font-size:12.5px; margin-top:2px; }
   .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:7px 11px; font-weight:600; font-size:13px; white-space:nowrap; }
-  .topbar .tbtn.red { background:var(--red); border-color:var(--red); }
-  .main { flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px calc(96px + var(--safe-b)); }
+  .main { flex:1 1 auto !important; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px calc(96px + var(--safe-b)); }
   .main.noscroll { overflow:hidden; padding:0; display:flex; flex-direction:column; }
   .actionbar { position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line); padding:10px 12px calc(10px + var(--safe-b)); display:flex; gap:10px; z-index:20; }
   .actionbar button { flex:1; padding:13px 12px; border:none; border-radius:10px; font-size:15px; font-weight:700; background:var(--chip); color:var(--text); }
@@ -69,11 +68,14 @@
   /* ---------- generic ---------- */
   .card { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
   .stack { display:flex; flex-direction:column; gap:12px; }
-  .field { display:flex; flex-direction:column; gap:5px; }
+  .field { display:flex; flex-direction:column; gap:5px; min-width:0; }
   .field label { font-size:12.5px; font-weight:600; color:var(--muted); }
-  .field input, .field select, .field textarea { width:100%; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; }
+  .field input, .field select, .field textarea { width:100%; min-width:0; max-width:100%; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; -webkit-appearance:none; appearance:none; }
+  .field input[type="date"] { min-height:46px; display:block; }
+  .field select { background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position:calc(100% - 18px) 20px, calc(100% - 13px) 20px; background-size:5px 5px; background-repeat:no-repeat; padding-right:32px; }
   .field textarea { min-height:84px; resize:vertical; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width: 440px) { .grid2 { grid-template-columns:1fr; } }
   .btn { padding:12px 14px; border:none; border-radius:10px; font-weight:700; font-size:15px; background:var(--chip); color:var(--text); }
   .btn.primary { background:var(--red); color:#fff; }
   .btn.ghost { background:transparent; border:1px solid var(--line-2); }
@@ -83,18 +85,19 @@
   .pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:600; background:var(--chip); color:var(--muted); white-space:nowrap; }
   .pill.good { background:var(--good-bg); color:var(--good); }
   .pill.warn { background:var(--warn-bg); color:var(--warn); }
-  .pill.red { background:var(--red); color:#fff; }
   .pill.dark { background:var(--ink); color:#fff; }
   .sect-title { display:flex; align-items:baseline; justify-content:space-between; margin:6px 2px 8px; }
   .sect-title h2 { font-size:19px; font-weight:700; letter-spacing:.02em; }
   .empty { padding:26px 16px; text-align:center; color:var(--muted); font-size:14px; }
-  .toast { position:fixed; left:50%; bottom:calc(84px + var(--safe-b)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-weight:600; font-size:14px; z-index:50; box-shadow:var(--shadow); opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; text-align:center; }
+  .toast { position:fixed; left:50%; bottom:calc(84px + var(--safe-b)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-weight:600; font-size:14px; z-index:60; box-shadow:var(--shadow); opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; text-align:center; }
   .toast.show { opacity:1; }
   .chips { display:flex; gap:8px; flex-wrap:wrap; }
-  .choice { padding:9px 12px; border-radius:9px; border:1px solid var(--line-2); background:var(--surface); font-weight:600; font-size:14px; }
+  .choice { padding:9px 12px; border-radius:9px; border:1px solid var(--line-2); background:var(--surface); font-weight:600; font-size:14px; text-align:left; }
   .choice.on { background:var(--ink); color:#fff; border-color:var(--ink); }
   .choice small { display:block; font-weight:500; font-size:11.5px; color:var(--muted); }
   .choice.on small { color:#B8B8C0; }
+  .hint { color:var(--muted); font-size:12.5px; text-align:center; padding:6px 10px 0; font-style:italic; }
+  .warnbar { background:var(--warn-bg); color:var(--warn); padding:10px 14px; font-size:13px; font-weight:600; border-bottom:1px solid var(--line); }
 
   /* ---------- login ---------- */
   .login { max-width:420px; margin:0 auto; padding-top:8vh; }
@@ -115,59 +118,86 @@
   .jobcard .bar i { display:block; height:100%; background:var(--red); transition:width .25s; }
   .jobcard.done .bar i { background:var(--good); }
   .statrow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .stat { background:var(--surface); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); }
+  .stat { background:var(--surface); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); border:2px solid transparent; text-align:left; }
+  .stat.on { border-color:var(--red); }
   .stat .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:26px; line-height:1; }
   .stat .k { font-size:11.5px; color:var(--muted); margin-top:3px; }
 
   /* ---------- job screen ---------- */
-  .jobhead { background:var(--ink); color:#FAFAFA; padding:0 14px 10px; }
-  .carchips { display:flex; gap:8px; overflow-x:auto; padding:2px 14px 8px; scrollbar-width:none; background:var(--ink); }
+  .carchips { display:flex; gap:8px; overflow-x:auto; padding:4px 14px 10px; scrollbar-width:none; background:var(--ink); }
   .carchips::-webkit-scrollbar { display:none; }
-  .carchip { flex:0 0 auto; border-radius:8px; padding:6px 11px; background:#232328; color:#D6D6DC; border:1px solid #33333A; font-weight:600; font-size:13px; white-space:nowrap; }
+  .carchip { flex:0 0 auto; border-radius:9px; padding:8px 12px; background:#232328; color:#D6D6DC; border:1px solid #33333A; font-weight:600; font-size:14px; white-space:nowrap; line-height:1.2; }
   .carchip.on { background:#fff; color:var(--ink); border-color:#fff; }
   .carchip.on i { color:var(--red); font-style:normal; }
-  .jobhead .times { display:flex; gap:8px; margin-top:8px; }
-  .tbox { flex:1; background:#1A1A1E; border:1px solid #2C2C33; border-radius:9px; padding:7px 10px; }
+  .jobhead { background:var(--ink); color:#FAFAFA; padding:0 14px 10px; }
+  .jobhead .times { display:flex; gap:8px; }
+  .tbox { flex:1; background:#1A1A1E; border:1px solid #2C2C33; border-radius:9px; padding:7px 10px; min-width:0; }
   .tbox .k { font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:#8E8E99; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; }
-  .tbox .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:22px; line-height:1.05; margin-top:1px; }
+  .tbox .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:22px; line-height:1.05; margin-top:1px; white-space:nowrap; }
   .tbox .v.red { color:var(--red); }
   .tbox button { all:unset; display:block; width:100%; cursor:pointer; }
-  .tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--line); flex:0 0 auto; }
-  .tab { flex:1; padding:10px 8px 8px; border:none; background:none; text-align:center; position:relative; }
-  .tab .t { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:15px; letter-spacing:.03em; text-transform:uppercase; }
-  .tab .p { font-size:11.5px; color:var(--muted); margin-top:1px; }
-  .tab .bar { height:3px; background:var(--chip); margin-top:6px; border-radius:2px; overflow:hidden; }
-  .tab .bar i { display:block; height:100%; background:var(--red); }
-  .tab.on .bar { background:var(--line-2); }
-  .tab.on::after { content:""; position:absolute; left:10%; right:10%; bottom:-1px; height:2px; background:var(--ink); }
-  .panes { flex:1 1 auto; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--line); }
+  .tab { flex:1; padding:11px 8px 0; border:none; background:none; text-align:center; color:var(--faint); }
+  .tab .t { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; letter-spacing:.03em; text-transform:uppercase; }
+  .tab .p { font-size:11.5px; margin-top:1px; }
+  .tab .ul { height:4px; margin-top:8px; background:transparent; border-radius:2px 2px 0 0; }
+  .tab.on { color:var(--text); }
+  .tab.on .ul { background:var(--red); }
+  .panes { flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; }
   .panes::-webkit-scrollbar { display:none; }
   .pane { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px calc(96px + var(--safe-b)); }
-  .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; }
-  .band { background:var(--band); color:var(--band-text); padding:8px 13px 7px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .panehead { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:2px 4px 10px; }
+  .panehead .eyebrow { color:var(--red); margin-bottom:1px; }
+  .panehead h2 { font-size:24px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; line-height:1; }
+  .panehead .c { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; color:var(--muted); white-space:nowrap; text-align:right; }
+  .panehead .c small { display:block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+  .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; border:2px solid transparent; }
+  .phase.current { border-color:var(--red); }
+  .band { background:var(--band); color:var(--band-text); padding:9px 13px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .phase.done .band { background:var(--band-done); }
   .band .l { min-width:0; }
-  .band .l b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:15.5px; letter-spacing:.03em; text-transform:uppercase; }
+  .band .l b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; letter-spacing:.03em; text-transform:uppercase; }
   .band .l b em { color:var(--red); font-style:normal; }
+  .phase.done .band .l b em { color:#7BE29A; }
   .band .l small { display:block; color:var(--band-sub); font-size:11.5px; margin-top:1px; }
   .band .r { text-align:right; flex:0 0 auto; }
-  .band .r .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; line-height:1; }
-  .band .r .d.live { color:#B8B8C0; }
+  .band .r .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:19px; line-height:1; }
+  .band .r .d.live { color:#FFD166; }
   .band .r .d.done { color:#7BE29A; }
+  .band .r .d.idle { color:#6E6E78; }
   .band .r .w { font-size:10.5px; color:var(--band-sub); margin-top:2px; white-space:nowrap; }
-  .policy { padding:9px 13px 3px; font-size:12.5px; color:var(--muted); font-style:italic; }
-  .item { display:flex; gap:11px; align-items:flex-start; padding:11px 13px; border-top:1px solid var(--line); }
-  .item .box { flex:0 0 26px; height:26px; margin-top:1px; border:2px solid var(--line-2); border-radius:7px; background:var(--surface); display:grid; place-items:center; color:#fff; font-size:15px; font-weight:800; }
-  .item.done .box { background:var(--red); border-color:var(--red); }
-  .item .txt { flex:1; min-width:0; font-size:14.5px; line-height:1.35; }
-  .item.done .txt { color:var(--muted); }
-  .item .meta { display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap; }
-  .item .stamp { font-size:12px; font-weight:600; color:var(--good); background:var(--good-bg); border-radius:6px; padding:2px 7px; border:none; }
-  .item .notebtn { font-size:12px; font-weight:600; color:var(--muted); background:var(--chip); border:none; border-radius:6px; padding:2px 8px; }
-  .item .flag { font-size:12.5px; color:var(--warn); background:var(--warn-bg); border-radius:6px; padding:4px 8px; margin-top:6px; }
+  .policy { padding:9px 13px 0; font-size:12.5px; color:var(--muted); font-style:italic; }
+  .steps { padding:6px 13px 4px; }
+  .step { display:flex; gap:9px; align-items:flex-start; padding:5px 0; font-size:14px; line-height:1.35; color:var(--text); }
+  .phase.done .step { color:var(--muted); }
+  .step .dot { flex:0 0 6px; height:6px; border-radius:50%; background:var(--line-2); margin-top:8px; }
+  .step .txt { flex:1; min-width:0; }
+  .step .nb { flex:0 0 auto; border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 8px; margin-top:1px; }
+  .step .nb.has { background:var(--warn-bg); color:var(--warn); }
+  .flag { font-size:12.5px; color:var(--warn); background:var(--warn-bg); border-radius:6px; padding:4px 8px; margin-top:4px; display:inline-block; }
+  .phasebtn { display:block; width:calc(100% - 26px); margin:6px 13px 13px; padding:13px; border:none; border-radius:10px; font-size:15.5px; font-weight:700; background:var(--red); color:#fff; }
+  .phase.done .phasebtn { background:var(--good-bg); color:var(--good); }
+  .phasebtn:not(.ready):not(.donebtn) { background:var(--chip); color:var(--muted); }
   .listnotes { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; }
   .listnotes label { font-size:12.5px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
   .listnotes textarea { width:100%; min-height:80px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
-  .hint { color:var(--muted); font-size:12.5px; text-align:center; padding:6px 10px 0; font-style:italic; }
+
+  /* ---------- notes sheet ---------- */
+  .sheetwrap { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:flex; align-items:flex-end; }
+  .sheet { background:var(--bg); width:100%; max-height:88dvh; border-radius:16px 16px 0 0; display:flex; flex-direction:column; }
+  .sheet .sh { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; }
+  .sheet .sh h2 { font-size:22px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; }
+  .sheet .sb { overflow-y:auto; padding:0 12px calc(16px + var(--safe-b)); }
+  .notegroup { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; margin-bottom:12px; }
+  .notegroup h3 { font-size:17px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; margin-bottom:8px; }
+  .notegroup h3 em { color:var(--red); font-style:normal; }
+  .noteline { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .noteline:first-of-type { border-top:none; }
+  .noteline .w { flex:0 0 auto; color:var(--muted); font-weight:600; font-size:12px; white-space:nowrap; margin-top:1px; }
+  .noteline .t { flex:1; min-width:0; }
+  .noteline .t small { display:block; color:var(--faint); font-size:11.5px; }
+  .noteline button { border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 8px; }
+  .notegroup textarea { width:100%; min-height:72px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
 
   /* ---------- report ---------- */
   .report { max-width:640px; margin:0 auto; }
@@ -178,27 +208,28 @@
   .report .kv b { color:#8E8E99; font-weight:600; }
   .report table { width:100%; border-collapse:collapse; font-size:13.5px; }
   .report th { text-align:left; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-size:12px; color:var(--muted); padding:8px 12px 6px; border-bottom:1px solid var(--line); }
-  .report td { padding:7px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .report td { padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
   .report td.r, .report th.r { text-align:right; white-space:nowrap; }
-  .report tr.ph td { background:var(--surface-2); font-weight:700; }
-  .report tr.ph td em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; letter-spacing:.03em; margin-right:6px; }
+  .report td em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; margin-right:6px; }
   .report tr.miss td { color:var(--bad); }
   .report .note { padding:10px 12px; font-size:13.5px; white-space:pre-wrap; }
-  .report .lt { display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px 4px; }
+  .report .lt { display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px 4px; gap:10px; }
   .report .lt h3 { font-size:19px; font-weight:700; letter-spacing:.02em; }
-  .report .lt .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:20px; }
+  .report .lt .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:18px; white-space:nowrap; }
 
   /* ---------- team / history ---------- */
-  .rowitem { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--line); }
+  .rowitem { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--line); width:100%; text-align:left; background:none; border-left:none; border-right:none; border-bottom:none; color:inherit; }
   .rowitem:first-child { border-top:none; }
   .rowitem .n { font-weight:600; }
   .rowitem .s { color:var(--muted); font-size:12.5px; }
+  .rowitem .big { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:20px; white-space:nowrap; }
   .seg { display:flex; background:var(--chip); border-radius:9px; padding:3px; }
   .seg button { flex:1; border:none; background:transparent; padding:7px; border-radius:7px; font-weight:600; font-size:13px; color:var(--muted); }
   .seg button.on { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+  .editrow { padding:12px 14px; border-top:1px solid var(--line); background:var(--surface-2); }
 
-  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } .panes { scroll-behavior:auto; } }
-  @media (min-width: 720px) { .main { padding-inline:calc((100vw - 680px)/2); } .pane { padding-inline:calc((100vw - 680px)/2); } .carchips, .jobhead, .topbar { padding-inline:calc((100vw - 680px)/2 + 14px); } .actionbar { padding-inline:calc((100vw - 680px)/2); } }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  @media (min-width: 720px) { .main { padding-inline:calc((100vw - 680px)/2); } .pane { padding-inline:calc((100vw - 680px)/2); } .carchips, .jobhead, .topbar { padding-inline:calc((100vw - 680px)/2 + 14px); } .actionbar { padding-inline:calc((100vw - 680px)/2); } .sheet { max-width:720px; margin:0 auto; } }
 </style>
 </head>
 <body>
@@ -207,8 +238,8 @@
 
 <script>
 /* =====================================================================
-   3X JOB BOARD · offline job checklist runner for 3X Detailing
-   Single-file web app. All data lives in this browser (localStorage).
+   3X JOB BOARD v2 · offline job runner for 3X Detailing
+   Phase-level check-offs · one job per car · all data on this phone.
    ===================================================================== */
 
 // ---------- Checklist library (mirrors 3XD SOC001–006, rev 09/11/2026) ----------
@@ -222,8 +253,8 @@ const CLOSEOUT_STEPS = [
 ];
 const closeout = n => [n, "VEHICLE SECURING & SITE CLOSE-OUT", "~5 min · the job isn't done until the car is protected", CLOSEOUT_STEPS, CLOSEOUT_POLICY];
 
-const SOC = {
- SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", short:"Interior", group:"Maintenance", phases:[
+const LISTS = {
+ SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
    "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)",
@@ -252,7 +283,7 @@ const SOC = {
    "Final visual scan — anything missed gets redone NOW"]],
   closeout("PHASE 8")
  ]},
- SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", short:"Exterior", group:"Maintenance", phases:[
+ SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
    "Generator on · pressure washer, water pump plugged in · bucket sudsed & pressurized"]],
@@ -286,7 +317,7 @@ const SOC = {
    "Every note fixed before leaving · job photos/notes sent to Sam"]],
   closeout("PHASE 10")
  ]},
- SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", short:"Interior", group:"Deep Clean", phases:[
+ SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display · generator on · vacuum, pressure washer, water pump + AIR COMPRESSOR plugged in",
    "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
@@ -319,7 +350,7 @@ const SOC = {
    "Belongings returned neatly · flashlight walk of every phase — anything not like-new redone NOW"]],
   closeout("PHASE 10")
  ]},
- SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", short:"Exterior", group:"Deep Clean", phases:[
+ SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged · generator on · pressure washer + water pump plugged in · bucket sudsed & pressurized",
    "LARGE stack of fresh wash mitts staged (deep clean burns through mitts)"]],
@@ -358,7 +389,7 @@ const SOC = {
    "Flashlight walk from Phase 3 · every note fixed before leaving · photos/notes sent to Sam"]],
   closeout("PHASE 11")
  ]},
- SOC005: { code:"SOC005", sop:"SOP005", title:"Decon & Ceramic Seal", short:"Decon", group:"Add-on", phases:[
+ SOC005: { code:"SOC005", sop:"SOP005", title:"Decon & Ceramic Seal", phases:[
   ["PHASE D1","CHEMICAL DECON — IRON REMOVER","runs right after the Contact Wash · car still wet & sudsy",[
    "Iron remover applied to ENTIRE car: paint, wheels, trim, glass — everything",
    "Dwell = product instructions exactly · NEVER allowed to dry · cool surfaces & shade rules apply",
@@ -381,7 +412,7 @@ const SOC = {
    "Client told: 4–6 months of protection depending on how the car is treated"]],
   closeout("PHASE D4")
  ]},
- SOC006: { code:"SOC006", sop:"SOP006", title:"Engine Bay", short:"Engine Bay", group:"Add-on", phases:[
+ SOC006: { code:"SOC006", sop:"SOP006", title:"Engine Bay", phases:[
   ["PHASE E1","SAFETY GATE & PROTECTION","~5 min · cool to the touch or WAIT",[
    "Client confirmed car not driven recently · every surface cool to the touch",
    "Delicate/exotic/vintage bay screened by photo BEFORE accepting — declined if dangerous",
@@ -401,21 +432,55 @@ const SOC = {
    "Covers removed · every covered area hand-cleaned: microfiber + a little APC (spray towel, never component)",
    "Spot-free water confirmed · sealant applied onto the WET bay",
    "Hood closed · air dries — no wiping · exterior wash follows and clears all overspray"]]
- ], footer:"Vehicle Securing & Site Close-Out runs at the end of the exterior checklist — not here." }
+ ], footer:"Vehicle Securing & Site Close-Out runs at the end of the exterior checklist — not here." },
+ // Services without a written SOP yet: one timed phase so the job still gets tracked.
+ GEN_PC2: { code:"GEN_PC2", title:"Two-Stage Correction & Ceramic", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Two-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
+ GEN_PC1: { code:"GEN_PC1", title:"Single-Stage Correction & Ceramic", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Single-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
+ GEN_ICP: { code:"GEN_ICP", title:"Interior Ceramic Protection", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior ceramic protection applied to leather, plastics and interior surfaces to 3X standard · photos + notes sent to Sam"]]] },
+ GEN_ISR: { code:"GEN_ISR", title:"Interior Surface Restoration", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior plastics, piano black and delicate trim corrected to 3X standard · photos + notes sent to Sam"]]] },
 };
-const SOC_ORDER = ["SOC001","SOC002","SOC003","SOC004","SOC005","SOC006"];
-const PACKAGES = [
-  { name:"Complete Maintenance Detail", socs:["SOC001","SOC002"] },
-  { name:"Interior & Exterior Deep Clean", socs:["SOC003","SOC004"] }
-];
-const ROLES = { owner:"Owner", lead:"Team Lead", tech:"Technician" };
+const LIST_ORDER = ["SOC001","SOC002","SOC003","SOC004","SOC005","SOC006","GEN_PC2","GEN_PC1","GEN_ICP","GEN_ISR"];
 
-// ---------- persistence ----------
+// ---------- Service menu (3X Pricing Sheet) → checklists ----------
+const SERVICES = [
+  { id:"cmd",   group:"Enhancement Services",      name:"Complete Maintenance Detail",              price:"$125–150",   lists:["SOC001","SOC002"] },
+  { id:"deep",  group:"Enhancement Services",      name:"Interior & Exterior Deep Cleaning",        price:"$250–300",   lists:["SOC003","SOC004"] },
+  { id:"decon", group:"Enhancement Services",      name:"Deep Cleaning & Paint Decontamination",    price:"$350–400",   lists:["SOC003","SOC004","SOC005"] },
+  { id:"eng",   group:"Enhancement Services",      name:"Engine Bay Detail",                         price:"$50–100",    lists:["SOC006"], addon:true },
+  { id:"pc2",   group:"High-Performance Services", name:"Two-Stage Paint Correction & Ceramic Coating",   price:"$2,100–2,600", lists:["GEN_PC2"] },
+  { id:"pc1",   group:"High-Performance Services", name:"Single Stage Paint Correction & Ceramic Coating", price:"$1,100–1,600", lists:["GEN_PC1"] },
+  { id:"icp",   group:"High-Performance Services", name:"Interior Ceramic Protection",               price:"$100–300",   lists:["GEN_ICP"] },
+  { id:"isr",   group:"High-Performance Services", name:"Interior Surface Restoration",              price:"$100–300",   lists:["GEN_ISR"] },
+];
+const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+const ROLES = { owner:"Owner", lead:"Team Lead", tech:"Technician" };
+const listsForServices = ids => LIST_ORDER.filter(c => ids.some(id => (SVC[id] || {lists:[]}).lists.includes(c)));
+
+// ---------- persistence + migration ----------
 const KEY = "3x_jobboard_v1";
 let DB = load();
 function load(){
-  try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (d && d.v === 1) return d; } catch(e){}
-  return { v:1, users:[], jobs:[], session:null, theme:"auto" };
+  let d = null; try { d = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
+  if (!d) return { v:2, users:[], jobs:[], session:null, theme:"auto" };
+  if (d.v === 1) migrateV1(d);
+  return d;
+}
+function migrateV1(d){
+  d.jobs.forEach(job => {
+    const codes = job.services || [];
+    // infer services from the checklist set
+    const ids = []; let left = new Set(codes);
+    [ "decon","deep","cmd","eng" ].forEach(id => { const s = SVC[id]; if (s.lists.every(c => left.has(c))) { ids.push(id); s.lists.forEach(c => left.delete(c)); } });
+    job.serviceIds = ids; job.extraLists = [...left];
+    Object.keys(job.lists || {}).forEach(code => {
+      const L = job.lists[code]; if (L.phases) return;
+      const ph = {}; const def = LISTS[code];
+      if (def) def.phases.forEach((p, pi) => { const ts = p[3].map((_, ii) => (L.checks || {})[pi+"_"+ii]).filter(Boolean); if (ts.length === p[3].length && ts.length) ph[pi] = Math.max(...ts); });
+      L.phases = ph; delete L.checks; L.flags = L.flags || {}; L.notes = L.notes || "";
+    });
+    delete job.services;
+  });
+  d.v = 2;
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ toast("Could not save — storage full or blocked"); } }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -424,10 +489,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 async function hashPw(pw, salt){
   const s = salt + "|" + pw;
   if (window.crypto && crypto.subtle) {
-    try {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-      return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
-    } catch(e){}
+    try { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join(""); } catch(e){}
   }
   let h1 = 0x811c9dc5, h2 = 5381;
   for (let i=0;i<s.length;i++){ const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = ((h2 << 5) + h2 + c) >>> 0; }
@@ -444,7 +506,7 @@ function fmtD(ms){
   return h ? `${h}h ${String(m%60).padStart(2,"0")}m` : `${m}m`;
 }
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
-function setTimeOfDay(baseTs, hhmm){ // "7:05" or "7:05 pm"
+function setTimeOfDay(baseTs, hhmm){
   const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m?)?\s*$/i.exec(hhmm || ""); if (!m) return null;
   let h = +m[1], mi = +(m[2]||0); const ap = (m[3]||"").toLowerCase();
   if (ap.startsWith("p") && h < 12) h += 12; if (ap.startsWith("a") && h === 12) h = 0;
@@ -453,78 +515,93 @@ function setTimeOfDay(baseTs, hhmm){ // "7:05" or "7:05 pm"
 }
 
 // ---------- job computations ----------
-function listItemsCount(code){ return SOC[code].phases.reduce((n,p) => n + p[3].length, 0); }
-function listDone(job, code){ return Object.keys(job.lists[code].checks).length; }
-function listLastCheck(job, code){ const v = Object.values(job.lists[code].checks); return v.length ? Math.max(...v) : null; }
-function listFirstCheck(job, code){ const v = Object.values(job.lists[code].checks); return v.length ? Math.min(...v) : null; }
+const jobLists = job => Object.keys(job.lists).length ? LIST_ORDER.filter(c => job.lists[c]) : [];
+const jobServiceNames = job => job.serviceIds.map(id => (SVC[id] || {name:id}).name).concat((job.extraLists || []).map(c => LISTS[c].title));
 function phaseStats(job, code){
-  const L = job.lists[code]; const out = []; let prevEnd = job.arrivedAt || listFirstCheck(job, code) || null;
-  SOC[code].phases.forEach((ph, pi) => {
-    const items = ph[3]; const ts = items.map((_, ii) => L.checks[pi+"_"+ii]).filter(Boolean);
-    const done = ts.length, total = items.length, complete = done === total;
-    const endAt = complete ? Math.max(...ts) : null;
-    const startAt = prevEnd;
-    const st = { pi, done, total, complete, startAt, endAt, duration: (complete && startAt != null) ? endAt - startAt : null, running: !complete && done > 0 };
+  const L = job.lists[code]; const defs = LISTS[code].phases; const out = []; let current = -1;
+  defs.forEach((ph, pi) => {
+    const endAt = L.phases[pi] || null;
+    const prevEnd = pi === 0 ? (job.arrivedAt || null) : (L.phases[pi-1] || null);
+    const st = { pi, complete: !!endAt, endAt, startAt: prevEnd, duration: (endAt && prevEnd) ? endAt - prevEnd : null, running:false };
+    if (!endAt && current < 0) { current = pi; st.running = !!prevEnd && !job.finishedAt; }
     out.push(st);
-    if (complete) prevEnd = endAt;
   });
   return out;
 }
-function jobProgress(job){ let d=0,t=0; job.services.forEach(c => { d += listDone(job,c); t += listItemsCount(c); }); return {d,t,pct: t ? Math.round(100*d/t) : 0}; }
-function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; job.services.forEach(c => { const l = listLastCheck(job,c); if (l && l > m) m = l; }); return m; }
+function listProgress(job, code){ const t = LISTS[code].phases.length; const d = Object.keys(job.lists[code].phases).length; return {d, t}; }
+function listSpan(job, code){ const v = Object.values(job.lists[code].phases); if (!v.length) return null; const start = job.arrivedAt || Math.min(...v); return Math.max(...v) - start; }
+function jobProgress(job){ let d=0,t=0; jobLists(job).forEach(c => { const p = listProgress(job,c); d += p.d; t += p.t; }); return {d,t,pct: t ? Math.round(100*d/t) : 0}; }
+function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; jobLists(job).forEach(c => Object.values(job.lists[c].phases).forEach(ts => { if (ts > m) m = ts; })); return m; }
 function jobTotal(job){ if (!job.arrivedAt) return null; return (job.finishedAt || Date.now()) - job.arrivedAt; }
 const userName = id => (DB.users.find(u => u.id === id) || {}).name || "—";
 const me = () => DB.users.find(u => u.id === (DB.session && DB.session.userId)) || null;
 const isOwner = () => (me() || {}).role === "owner";
-
-// ---------- report text ----------
-function reportText(job){
-  const L = [];
-  L.push("3X DETAILING — JOB REPORT");
-  L.push(`${job.vehicle} · ${job.client}`);
-  L.push(`${fmtDate(job.date)} · Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`);
-  L.push(`Services: ${job.services.map(c => SOC[c].title).join(" + ")}`);
-  L.push(`Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · Total ${fmtD(jobTotal(job))}`);
-  if (job.finishNote) L.push(`Finished with open items: ${job.finishNote}`);
-  job.services.forEach(code => {
-    const S = SOC[code]; const st = phaseStats(job, code); const done = listDone(job, code), tot = listItemsCount(code);
-    const first = job.arrivedAt || listFirstCheck(job, code), last = listLastCheck(job, code);
-    L.push(""); L.push(`${S.title.toUpperCase()} (3XD ${code}) — ${done}/${tot} · ${first && last ? fmtD(last - first) : "—"}`);
-    S.phases.forEach((ph, pi) => {
-      const s = st[pi];
-      L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : `${s.done}/${s.total} done`}`);
-      ph[3].forEach((txt, ii) => {
-        const k = pi+"_"+ii; const ts = job.lists[code].checks[k]; const fl = job.lists[code].flags[k];
-        L.push(`   ${ts ? "✓ " + fmtT(ts) : "✗ NOT DONE"}  ${txt}${fl ? `  ⚑ ${fl}` : ""}`);
-      });
-    });
-    if (job.lists[code].notes) L.push(` Notes: ${job.lists[code].notes}`);
+function allNotes(job){ // aggregated notes in reading order
+  const out = [];
+  if (job.notes) out.push({ where:"Job", what:job.notes, kind:"job" });
+  jobLists(job).forEach(code => {
+    const L = job.lists[code]; const S = LISTS[code];
+    S.phases.forEach((ph, pi) => ph[3].forEach((txt, ii) => { const f = L.flags[pi+"_"+ii]; if (f) out.push({ where:`${S.title} · ${ph[0]}`, what:f, step:txt, kind:"step", code, k:pi+"_"+ii }); }));
+    if (L.notes) out.push({ where:S.title, what:L.notes, kind:"list", code });
   });
-  if (job.notes) { L.push(""); L.push(`JOB NOTES: ${job.notes}`); }
-  L.push(""); L.push("Get it perfect. Keep it perfect.");
+  return out;
+}
+
+// ---------- share text (short) + full detail ----------
+function summaryText(job){
+  const L = [];
+  L.push(`3X JOB · ${fmtDate(job.date)}`);
+  L.push(`${job.client} · ${job.vehicle}`);
+  L.push(`Service: ${jobServiceNames(job).join(" + ")}`);
+  L.push(`Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · ${fmtD(jobTotal(job))} on site`);
+  L.push(`Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`);
+  if (job.finishNote) L.push(`⚑ Finished with open phases: ${job.finishNote}`);
+  const notes = allNotes(job);
+  if (notes.length) { L.push(""); L.push("NOTES"); notes.forEach(n => L.push(`• ${n.where}: ${n.what}`)); } else { L.push(""); L.push("No notes."); }
+  return L.join("\n");
+}
+function fullText(job){
+  const L = [summaryText(job), "", "PHASE TIMING"];
+  jobLists(job).forEach(code => {
+    const S = LISTS[code]; const st = phaseStats(job, code); const p = listProgress(job, code);
+    L.push(""); L.push(`${S.title.toUpperCase()} — ${p.d} of ${p.t} phases · ${fmtD(listSpan(job, code))}`);
+    S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : "NOT DONE"}`); });
+  });
   return L.join("\n");
 }
 
 // ---------- UI state ----------
-const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", newjob:null };
+const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", histDetail:null, newjob:null, editUser:null, sheet:false };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $ = sel => document.querySelector(sel);
 const app = document.getElementById("app");
 let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
 function applyTheme(){ const r = document.documentElement; if (DB.theme === "light" || DB.theme === "dark") r.setAttribute("data-theme", DB.theme); else r.removeAttribute("data-theme"); }
-function go(screen, extra){ Object.assign(ui, {screen}, extra || {}); render(); window.scrollTo(0,0); }
+function go(screen, extra){ Object.assign(ui, {screen, sheet:false}, extra || {}); render(); }
+let liveTimer = null;
+function setLive(fn){ clearInterval(liveTimer); liveTimer = fn ? setInterval(fn, 1000) : null; }
+
+// ---------- storage health ----------
+function storageWarning(){
+  let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
+  let ok = true; try { localStorage.setItem("__3x_probe", "1"); ok = localStorage.getItem("__3x_probe") === "1"; localStorage.removeItem("__3x_probe"); } catch(e){ ok = false; }
+  if (ok && !framed) return "";
+  const why = !ok ? "This browser is blocking storage, so nothing you enter here will be kept." : "This page is running inside another site's frame (a preview). On iPhone that storage is wiped when you leave.";
+  return `<div class="warnbar">⚠ ${why} Open the app at its own web address and add it to your Home Screen.</div>`;
+}
 
 // ---------- render root ----------
-let liveTimer = null;
 function render(){
-  clearInterval(liveTimer); liveTimer = null;
-  if (!DB.users.length) return renderSetup();
-  if (!me()) return renderLogin();
-  ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
+  setLive(null);
+  if (!DB.users.length) renderSetup();
+  else if (!me()) renderLogin();
+  else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
+  const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
 function topbar(title, sub, right){
   return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px">${right || ""}</div></div></div>`;
 }
+function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 
 // ---------- first-run setup ----------
 function renderSetup(){
@@ -570,16 +647,15 @@ function jobCard(job){
   const p = jobProgress(job); const done = job.status === "done";
   const meta = [
     `<span class="pill dark">${esc(userName(job.leadId))}</span>`,
-    ...job.services.map(c => `<span class="pill">${esc(SOC[c].title)}</span>`),
+    ...jobServiceNames(job).map(n => `<span class="pill">${esc(n)}</span>`),
     done ? `<span class="pill good">Done · ${fmtD(jobTotal(job))}</span>` : (job.arrivedAt ? `<span class="pill warn num">On site · <span data-live="total-${job.id}">${fmtD(jobTotal(job))}</span></span>` : `<span class="pill">Not arrived</span>`)
   ].join("");
-  return `<button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t}</div></div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button>`;
+  return `<button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t} phases</div></div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button>`;
 }
 function renderHome(){
   const u = me(); const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => jobLastActivity(b) - jobLastActivity(a));
   const recent = DB.jobs.filter(j => j.status === "done").sort((a,b) => b.finishedAt - a.finishedAt).slice(0,3);
-  app.innerHTML = topbar(`Hey, ${u.name.split(" ")[0]}`, `${ROLES[u.role]} · ${new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"})}`,
-      `<button class="tbtn" data-go="settings">⚙</button>`) +
+  app.innerHTML = topbar(`Hey, ${u.name.split(" ")[0]}`, `${ROLES[u.role]} · ${new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"})}`, `<button class="tbtn" data-go="settings">⚙</button>`) +
     `<div class="main"><div class="stack">
       <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
       ${active.length ? active.map(jobCard).join("") : `<div class="card empty">No cars on the board. Start a job when you pull up.</div>`}
@@ -589,32 +665,27 @@ function renderHome(){
     </div></div>
     <div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
   wireNav(); app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
-  liveTimer = setInterval(() => DB.jobs.filter(j => j.status === "active" && j.arrivedAt).forEach(j => { const el = app.querySelector(`[data-live="total-${j.id}"]`); if (el) el.textContent = fmtD(jobTotal(j)); }), 1000);
+  setLive(() => DB.jobs.filter(j => j.status === "active" && j.arrivedAt).forEach(j => { const el = app.querySelector(`[data-live="total-${j.id}"]`); if (el) el.textContent = fmtD(jobTotal(j)); }));
 }
-function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) return; if (job.status === "done") go("report", {jobId:id}); else go("job", {jobId:id, pane:0}); }
 
 // ---------- new job ----------
 function renderNewJob(){
-  const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", services:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
-  const people = DB.users;
+  const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", serviceIds:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
+  const people = DB.users; const lists = listsForServices(nj.serviceIds);
+  const groups = [...new Set(SERVICES.map(s => s.group))];
   app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" data-go="home">Cancel</button>`) +
    `<div class="main"><div class="stack">
     <div class="card" style="padding:14px"><div class="stack">
-      <div class="grid2">
-        <div class="field"><label>Date</label><input id="n_date" type="date" value="${nj.date}"></div>
-        <div class="field"><label>Team lead</label><select id="n_lead">${people.map(p => `<option value="${p.id}" ${p.id === nj.leadId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
-      </div>
+      <div class="field"><label>Date</label><input id="n_date" type="date" value="${nj.date}"></div>
+      <div class="field"><label>Team lead</label><select id="n_lead">${people.map(p => `<option value="${p.id}" ${p.id === nj.leadId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
       <div class="field"><label>Client name</label><input id="n_client" placeholder="Lars Letenoff" value="${esc(nj.client)}"></div>
       <div class="field"><label>Vehicle</label><input id="n_vehicle" placeholder="Ferrari 296 GTB" value="${esc(nj.vehicle)}"></div>
-      <div class="field"><label>Technicians on this car</label><div class="chips" id="n_techs">${people.filter(p => p.id !== nj.leadId).map(p => `<button class="choice ${nj.techIds.includes(p.id) ? "on" : ""}" data-tech="${p.id}">${esc(p.name)}</button>`).join("") || `<span class="s" style="color:var(--muted);font-size:13px">No other team members yet.</span>`}</div></div>
+      <div class="field"><label>Technicians on this car</label><div class="chips">${people.filter(p => p.id !== nj.leadId).map(p => `<button class="choice ${nj.techIds.includes(p.id) ? "on" : ""}" data-tech="${p.id}">${esc(p.name)}</button>`).join("") || `<span style="color:var(--muted);font-size:13px">No other team members yet.</span>`}</div></div>
     </div></div>
-    <div class="sect-title"><h2>Services</h2><span class="pill">${nj.services.length} checklist${nj.services.length === 1 ? "" : "s"}</span></div>
+    <div class="sect-title"><h2>Services</h2><span class="pill">${lists.length} checklist${lists.length === 1 ? "" : "s"}</span></div>
     <div class="card" style="padding:12px"><div class="stack">
-      <div class="eyebrow">Packages</div>
-      <div class="chips">${PACKAGES.map(p => `<button class="choice ${p.socs.every(c => nj.services.includes(c)) ? "on" : ""}" data-pkg="${p.socs.join(",")}">${esc(p.name)}<small>${p.socs.map(c => SOC[c].title).join(" + ")}</small></button>`).join("")}</div>
-      <div class="eyebrow" style="margin-top:4px">Individual checklists</div>
-      <div class="chips">${SOC_ORDER.map(c => `<button class="choice ${nj.services.includes(c) ? "on" : ""}" data-svc="${c}">${esc(SOC[c].title)}<small>3XD ${c} · ${listItemsCount(c)} steps</small></button>`).join("")}</div>
+      ${groups.map(g => `<div class="eyebrow">${esc(g)}</div><div class="chips">${SERVICES.filter(s => s.group === g).map(s => `<button class="choice ${nj.serviceIds.includes(s.id) ? "on" : ""}" data-svc="${s.id}">${esc(s.name)}<small>${esc(s.price)} · ${s.lists.map(c => LISTS[c].title).join(" + ")}${s.lists.some(c => LISTS[c].generic) ? " (timed only, no SOP yet)" : ""}</small></button>`).join("")}</div>`).join("")}
     </div></div>
     <div class="err" id="n_err"></div>
    </div></div>
@@ -623,14 +694,13 @@ function renderNewJob(){
   const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.client = $("#n_client").value; nj.vehicle = $("#n_vehicle").value; nj.leadId = $("#n_lead").value; };
   $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); renderNewJob(); };
   app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; renderNewJob(); });
-  app.querySelectorAll("[data-pkg]").forEach(b => b.onclick = () => { readForm(); const socs = b.dataset.pkg.split(","); const on = socs.every(c => nj.services.includes(c)); nj.services = on ? nj.services.filter(c => !socs.includes(c)) : [...new Set([...nj.services, ...socs])]; renderNewJob(); });
-  app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const c = b.dataset.svc; nj.services = nj.services.includes(c) ? nj.services.filter(x => x !== c) : [...nj.services, c]; renderNewJob(); });
+  app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.svc; nj.serviceIds = nj.serviceIds.includes(id) ? nj.serviceIds.filter(x => x !== id) : [...nj.serviceIds, id]; renderNewJob(); });
   $("#n_go").onclick = () => {
     readForm();
     if (!nj.client.trim() || !nj.vehicle.trim()) { $("#n_err").textContent = "Client and vehicle are required."; return; }
-    if (!nj.services.length) { $("#n_err").textContent = "Pick at least one service."; return; }
-    const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), services:SOC_ORDER.filter(c => nj.services.includes(c)), leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
-    job.services.forEach(c => job.lists[c] = { checks:{}, flags:{}, notes:"" });
+    if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
+    const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
+    listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"" });
     DB.jobs.push(job); save(); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
@@ -639,29 +709,29 @@ function renderNewJob(){
 function renderJob(){
   const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
   const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => a.createdAt - b.createdAt);
-  const p = jobProgress(job);
+  const lists = jobLists(job); const p = jobProgress(job);
+  if (ui.pane >= lists.length) ui.pane = 0;
   app.innerHTML = `
-   <div class="topbar" style="padding-bottom:6px"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(job.vehicle)}</h1><div class="sub">${esc(job.client)} · ${fmtDate(job.date)} · Lead ${esc(userName(job.leadId))}${job.techIds.length ? " · " + job.techIds.map(userName).map(esc).join(", ") : ""}</div></div>
-     <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end"><button class="tbtn" data-go="home">Board</button></div></div></div>
+   <div class="topbar" style="padding-bottom:8px"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(job.vehicle)}</h1><div class="sub">${esc(job.client)} · ${fmtDate(job.date)} · Lead ${esc(userName(job.leadId))}${job.techIds.length ? " · " + job.techIds.map(userName).map(esc).join(", ") : ""}</div></div>
+     <button class="tbtn" data-go="home">Board</button></div></div>
    ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)} <span class="num" style="opacity:.7">${jobProgress(j).pct}%</span></button>`).join("")}</div>` : ""}
    <div class="jobhead"><div class="times">
      <div class="tbox"><button id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to stamp"}</div></button></div>
      <div class="tbox"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div>
-     <div class="tbox"><div class="k">Progress</div><div class="v num">${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span></div></div>
+     <div class="tbox"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span></div></div>
    </div></div>
    <div class="main noscroll">
-     <div class="tabs">${job.services.map((c,i) => { const d = listDone(job,c), t = listItemsCount(c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(SOC[c].title)}</div><div class="p num">${d}/${t}</div><div class="bar"><i style="width:${Math.round(100*d/t)}%"></i></div></button>`; }).join("")}</div>
-     <div class="panes" id="panes">${job.services.map(c => renderPane(job, c)).join("")}</div>
+     ${lists.length > 1 ? `<div class="tabs">${lists.map((c,i) => { const lp = listProgress(job,c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(LISTS[c].title)}</div><div class="p num">${lp.d}/${lp.t} phases</div><div class="ul"></div></button>`; }).join("")}</div>` : ""}
+     <div class="panes" id="panes">${lists.map(c => renderPane(job, c)).join("")}</div>
    </div>
-   <div class="actionbar"><button class="narrow" id="jobnotes">Job notes${job.notes ? " •" : ""}</button><button class="primary" id="finish">${p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`}</button></div>`;
+   <div class="actionbar"><button class="narrow" id="notesbtn">Notes${allNotes(job).length ? ` · ${allNotes(job).length}` : ""}</button><button class="primary" id="finish">${p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`}</button></div>`;
   wireNav();
   app.querySelectorAll("[data-switch]").forEach(b => b.onclick = () => go("job", {jobId:b.dataset.switch, pane:0}));
   const panes = $("#panes");
   panes.scrollLeft = ui.pane * panes.clientWidth;
-  app.querySelectorAll("[data-pane]").forEach(b => b.onclick = () => { ui.pane = +b.dataset.pane; panes.scrollTo({left: ui.pane * panes.clientWidth, behavior:"smooth"}); syncTabs(); });
-  let st; panes.addEventListener("scroll", () => { clearTimeout(st); st = setTimeout(() => { const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }, 60); });
+  app.querySelectorAll("[data-pane]").forEach(b => b.onclick = () => { ui.pane = +b.dataset.pane; syncTabs(); panes.scrollTo({left: ui.pane * panes.clientWidth, behavior:"smooth"}); });
+  let raf = 0; panes.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }); });
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
-
   $("#arrive").onclick = () => {
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); save(); toast("Arrival stamped " + fmtT(job.arrivedAt)); renderJob(); return; }
     const v = prompt("Arrival time is " + fmtT(job.arrivedAt) + ".\nEnter a corrected time (e.g. 7:05 am) or leave blank to keep it:");
@@ -669,21 +739,27 @@ function renderJob(){
     job.arrivedAt = ts; save(); renderJob();
   };
   panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
-  $("#jobnotes").onclick = () => { const v = prompt("Job notes (client requests, issues, where the key went):", job.notes || ""); if (v == null) return; job.notes = v; save(); renderJob(); };
+  $("#notesbtn").onclick = () => openNotes(job);
   $("#finish").onclick = () => finishJob(job);
-  liveTimer = setInterval(() => { const el = app.querySelector('[data-live="total"]'); if (el) el.textContent = fmtD(jobTotal(job)); app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running && s.startAt) e.textContent = fmtD(Date.now() - s.startAt); }); }, 1000);
+  setLive(() => {
+    const el = app.querySelector('[data-live="total"]'); if (el) el.textContent = fmtD(jobTotal(job));
+    app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running && s.startAt) e.textContent = fmtD(Date.now() - s.startAt); });
+  });
+  if (ui.sheet) openNotes(job);
 }
 function renderPane(job, code){
-  const S = SOC[code]; const st = phaseStats(job, code); const L = job.lists[code];
+  const S = LISTS[code]; const st = phaseStats(job, code); const L = job.lists[code]; const lp = listProgress(job, code);
   return `<div class="pane" data-code="${code}">
-   ${S.phases.map((ph, pi) => { const s = st[pi];
+   <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases<small>${fmtD(listSpan(job, code))} so far</small></div></div>
+   ${S.phases.map((ph, pi) => { const s = st[pi]; const cur = !s.complete && st.findIndex(x => !x.complete) === pi;
      const right = s.complete ? `<div class="d done num">${fmtD(s.duration)}</div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}</div>`
-       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${s.startAt ? fmtD(Date.now() - s.startAt) : "…"}</div><div class="w">in progress · ${s.done}/${s.total}</div>`
-       : `<div class="d live">—</div><div class="w">${esc(ph[2])}</div>`;
-     return `<div class="phase"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b>${(s.complete || s.running) ? `<small>${esc(ph[2])}</small>` : ""}</div><div class="r">${right}</div></div>
+       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${fmtD(Date.now() - s.startAt)}</div><div class="w">in progress</div>`
+       : `<div class="d idle">—</div><div class="w">${cur ? "waiting on arrival" : "up next"}</div>`;
+     return `<div class="phase ${s.complete ? "done" : ""} ${cur ? "current" : ""}"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${esc(ph[2])}</small></div><div class="r">${right}</div></div>
        ${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
-       ${ph[3].map((txt, ii) => { const k = pi+"_"+ii; const ts = L.checks[k]; const fl = L.flags[k];
-         return `<div class="item ${ts ? "done" : ""}" data-chk="${code}:${k}"><div class="box">${ts ? "✓" : ""}</div><div class="txt">${esc(txt)}<div class="meta">${ts ? `<button class="stamp num" data-stamp="${code}:${k}">✓ ${fmtT(ts)}</button>` : ""}<button class="notebtn" data-flag="${code}:${k}">${fl ? "edit note" : "+ note"}</button></div>${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div></div>`; }).join("")}
+       <div class="steps">${ph[3].map((txt, ii) => { const k = pi+"_"+ii; const fl = L.flags[k];
+         return `<div class="step"><div class="dot"></div><div class="txt">${esc(txt)}${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div><button class="nb ${fl ? "has" : ""}" data-flag="${code}:${k}">${fl ? "edit" : "note"}</button></div>`; }).join("")}</div>
+       <button class="phasebtn ${s.complete ? "donebtn" : (cur ? "ready" : "")}" data-phase="${code}:${pi}">${s.complete ? `✓ Done ${fmtT(s.endAt)} · tap to change` : `Mark ${esc(ph[0].toLowerCase().replace("phase ", "Phase "))} complete`}</button>
      </div>`; }).join("")}
    ${S.footer ? `<div class="hint">➜ ${esc(S.footer)}</div>` : ""}
    <div class="listnotes"><label>${esc(S.title)} notes</label><textarea data-lnotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(L.notes)}</textarea></div>
@@ -693,38 +769,59 @@ function refreshPane(job, code){
   const panes = $("#panes"); const old = panes.querySelector(`.pane[data-code="${code}"]`); const top = old.scrollTop;
   const tmp = document.createElement("div"); tmp.innerHTML = renderPane(job, code); const fresh = tmp.firstElementChild;
   old.replaceWith(fresh); fresh.scrollTop = top; panes.scrollLeft = ui.pane * panes.clientWidth;
-  const p = jobProgress(job);
-  app.querySelectorAll("[data-pane]").forEach(b => { const c = job.services[+b.dataset.pane]; const d = listDone(job,c), t = listItemsCount(c); b.querySelector(".p").textContent = `${d}/${t}`; b.querySelector(".bar i").style.width = Math.round(100*d/t) + "%"; });
-  const prog = app.querySelector(".jobhead .tbox:last-child .v"); if (prog) prog.innerHTML = `${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span>`;
+  const p = jobProgress(job); const lists = jobLists(job);
+  app.querySelectorAll("[data-pane]").forEach(b => { const c = lists[+b.dataset.pane]; const lp = listProgress(job,c); b.querySelector(".p").textContent = `${lp.d}/${lp.t} phases`; });
+  $("#prog").innerHTML = `${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span>`;
   $("#finish").textContent = p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`;
+  $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : "");
   const arr = $("#arrive .v"); if (arr && job.arrivedAt) { arr.textContent = fmtT(job.arrivedAt); arr.classList.remove("red"); }
   wirePane(job, fresh);
 }
 function wirePane(job, pane){
-  pane.querySelectorAll("[data-chk]").forEach(el => el.onclick = e => {
-    if (e.target.closest("[data-stamp],[data-flag]")) return;
-    const [code, k] = el.dataset.chk.split(":"); const L = job.lists[code];
-    if (L.checks[k]) { if (!confirm("Uncheck this step? Its timestamp will be cleared.")) return; delete L.checks[k]; }
-    else { if (!job.arrivedAt) { job.arrivedAt = Date.now(); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); } L.checks[k] = Date.now(); }
-    save(); refreshPane(job, code);
-  });
-  pane.querySelectorAll("[data-stamp]").forEach(el => el.onclick = () => {
-    const [code, k] = el.dataset.stamp.split(":"); const L = job.lists[code];
-    const v = prompt("Checked at " + fmtT(L.checks[k]) + ".\nEnter the real completion time (e.g. 7:20 am) or leave blank:");
-    if (v == null || !v.trim()) return; const ts = setTimeOfDay(L.checks[k], v); if (!ts) { toast("Couldn't read that time"); return; }
-    L.checks[k] = ts; save(); refreshPane(job, code);
+  pane.querySelectorAll("[data-phase]").forEach(el => el.onclick = () => {
+    const [code, pi] = el.dataset.phase.split(":"); const L = job.lists[code]; const ph = LISTS[code].phases[+pi];
+    if (L.phases[pi]) {
+      const v = prompt(`${ph[0]} was marked done at ${fmtT(L.phases[pi])}.\nEnter the real completion time (e.g. 7:20 am), or type "undo" to clear it:`);
+      if (v == null || !v.trim()) return;
+      if (/^undo$/i.test(v.trim())) { delete L.phases[pi]; save(); refreshPane(job, code); return; }
+      const ts = setTimeOfDay(L.phases[pi], v); if (!ts) { toast("Couldn't read that time"); return; }
+      L.phases[pi] = ts; save(); refreshPane(job, code); return;
+    }
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); }
+    L.phases[pi] = Date.now(); save(); refreshPane(job, code);
+    const next = pane.querySelector(`.phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
   });
   pane.querySelectorAll("[data-flag]").forEach(el => el.onclick = () => {
     const [code, k] = el.dataset.flag.split(":"); const L = job.lists[code];
     const v = prompt("Note on this step (issue found, redo, upcharge, etc.). Leave blank to remove:", L.flags[k] || "");
     if (v == null) return; if (v.trim()) L.flags[k] = v.trim(); else delete L.flags[k]; save(); refreshPane(job, code);
   });
-  pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); });
+  pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : ""); });
+}
+function openNotes(job){
+  ui.sheet = true;
+  const old = $("#sheet"); if (old) old.remove();
+  const notes = allNotes(job).filter(n => n.kind === "step");
+  const lists = jobLists(job);
+  const html = `<div class="sheetwrap" id="sheet"><div class="sheet">
+    <div class="sh"><h2>Notes · ${esc(job.vehicle)}</h2><button class="btn small" id="sheetclose">Done</button></div>
+    <div class="sb">
+      <div class="notegroup"><h3><em>Job</em> notes</h3><textarea id="jobnotes" placeholder="Client requests, issues, where the key went, anything Sam should know…">${esc(job.notes)}</textarea></div>
+      <div class="notegroup"><h3><em>Flagged</em> steps</h3>${notes.length ? notes.map(n => `<div class="noteline"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}<small>${esc(n.step)}</small></div><button data-editflag="${n.code}:${n.k}">edit</button></div>`).join("") : `<div class="noteline"><div class="t" style="color:var(--muted)">Nothing flagged. Use "note" on any step to flag it.</div></div>`}</div>
+      ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}
+    </div></div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+  const sheet = $("#sheet");
+  const close = () => { ui.sheet = false; sheet.remove(); renderJob(); };
+  $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
+  $("#jobnotes").oninput = e => { job.notes = e.target.value; save(); };
+  sheet.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; save(); });
+  sheet.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; const v = prompt("Edit note (blank removes it):", L.flags[k] || ""); if (v == null) return; if (v.trim()) L.flags[k] = v.trim(); else delete L.flags[k]; save(); openNotes(job); });
 }
 function finishJob(job){
   const p = jobProgress(job);
   if (p.d < p.t) {
-    const v = prompt(`${p.t - p.d} step(s) are not checked off. Every step should be done before signing off.\n\nTo finish anyway, write why (this goes on the report):`);
+    const v = prompt(`${p.t - p.d} phase(s) are not marked complete. Every phase should be done before signing off.\n\nTo finish anyway, write why (this goes on the report):`);
     if (v == null || !v.trim()) return; job.finishNote = v.trim();
   }
   if (!job.arrivedAt) job.arrivedAt = job.createdAt;
@@ -735,65 +832,79 @@ function finishJob(job){
 // ---------- report ----------
 function renderReport(){
   const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
-  const rows = job.services.map(code => {
-    const S = SOC[code]; const st = phaseStats(job, code); const done = listDone(job, code), tot = listItemsCount(code);
-    const first = job.arrivedAt || listFirstCheck(job, code), last = listLastCheck(job, code);
-    return `<div class="card"><div class="lt"><h3>${esc(S.title)} <span class="eyebrow">3XD ${code}</span></h3><div class="d num">${done}/${tot} · ${first && last ? fmtD(last - first) : "—"}</div></div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Step</th><th class="r">Time</th><th class="r">Took</th></tr></thead><tbody>
-     ${S.phases.map((ph, pi) => { const s = st[pi];
-       return `<tr class="ph"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : `${s.done}/${s.total}`}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>` +
-         ph[3].map((txt, ii) => { const k = pi+"_"+ii; const ts = job.lists[code].checks[k]; const fl = job.lists[code].flags[k];
-           return `<tr class="${ts ? "" : "miss"}"><td>${ts ? "✓" : "✗"} ${esc(txt)}${fl ? `<div class="flag" style="display:inline-block;margin-top:4px">⚑ ${esc(fl)}</div>` : ""}</td><td class="r num">${ts ? fmtT(ts) : "not done"}</td><td></td></tr>`; }).join("");
-     }).join("")}</tbody></table></div>
-     ${job.lists[code].notes ? `<div class="note"><b>Notes:</b> ${esc(job.lists[code].notes)}</div>` : ""}</div>`;
+  const notes = allNotes(job);
+  const rows = jobLists(job).map(code => {
+    const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code);
+    return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listSpan(job, code))}</div></div>
+     <div style="overflow-x:auto"><table><thead><tr><th>Phase</th><th class="r">Start → done</th><th class="r">Took</th></tr></thead><tbody>
+     ${S.phases.map((ph, pi) => { const s = st[pi]; return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }).join("");
-  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off · share it to Sam" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="report stack">
      <div class="head"><h2>${esc(job.vehicle)}</h2><div class="sub">${esc(job.client)} · ${fmtDate(job.date)}</div>
-       <div class="kv num"><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Services</b><span>${job.services.map(c => esc(SOC[c].title)).join(" + ")}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>Total</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
-       ${job.finishNote ? `<div class="flag" style="margin-top:10px">⚑ Finished with open items: ${esc(job.finishNote)}</div>` : ""}</div>
+       <div class="kv num"><b>Service</b><span>${jobServiceNames(job).map(esc).join(" + ")}</span><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>On site</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
+       ${job.finishNote ? `<div class="flag" style="margin-top:10px">⚑ Finished with open phases: ${esc(job.finishNote)}</div>` : ""}</div>
+     <div class="card"><div class="lt"><h3>Notes</h3><div class="d num">${notes.length}</div></div>${notes.length ? notes.map(n => `<div class="noteline" style="padding:8px 12px"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}${n.step ? `<small>${esc(n.step)}</small>` : ""}</div></div>`).join("") : `<div class="note" style="color:var(--muted)">No notes on this job.</div>`}</div>
      ${rows}
-     ${job.notes ? `<div class="card"><div class="lt"><h3>Job notes</h3></div><div class="note">${esc(job.notes)}</div></div>` : ""}
-     ${job.status === "active" ? `<button class="btn ghost" id="backtojob">Back to checklists</button>` : (isOwner() ? `<button class="btn ghost danger" id="deljob">Delete this job</button>` : "")}
+     ${job.status === "active" ? `<button class="btn ghost" id="backtojob">Back to checklists</button>` : ""}
+     <button class="btn ghost" id="copyfull">Copy full phase timing as text</button>
+     ${job.status === "done" && isOwner() ? `<button class="btn ghost danger" id="deljob">Delete this job</button>` : ""}
    </div></div>
-   <div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share report</button></div>`;
+   <div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share summary</button></div>`;
   wireNav();
-  const text = reportText(job);
-  $("#share").onclick = async () => {
-    if (navigator.share) { try { await navigator.share({ title:`3X Job Report — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } }
-    copyText(text);
-  };
+  const text = summaryText(job);
+  $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title:`3X Job — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
   $("#copy").onclick = () => copyText(text);
+  $("#copyfull").onclick = () => copyText(fullText(job));
   const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
   const d = $("#deljob"); if (d) d.onclick = () => { if (confirm("Delete this job and its timing permanently?")) { DB.jobs = DB.jobs.filter(j => j.id !== job.id); save(); go("history"); } };
 }
-async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text to Sam"); } catch(e){ prompt("Copy this report:", t); } }
+async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ prompt("Copy this:", t); } }
 
 // ---------- history & stats ----------
 function renderHistory(){
   const u = me(); const mine = ui.histFilter === "mine";
   const done = DB.jobs.filter(j => j.status === "done" && (!mine || j.leadId === u.id || j.techIds.includes(u.id))).sort((a,b) => b.finishedAt - a.finishedAt);
-  const totals = done.map(jobTotal).filter(x => x != null);
-  const avg = totals.length ? totals.reduce((a,b) => a+b, 0)/totals.length : null;
-  const bySvc = {}; done.forEach(j => j.services.forEach(c => { const f = j.arrivedAt, l = listLastCheck(j, c); if (f && l) (bySvc[c] = bySvc[c] || []).push(l - f); }));
-  app.innerHTML = topbar("History & stats", `${done.length} finished job${done.length === 1 ? "" : "s"}`, `<button class="tbtn" data-go="home">Board</button>`) +
+  const timed = done.filter(j => jobTotal(j) != null);
+  const avg = timed.length ? timed.reduce((a,j) => a + jobTotal(j), 0)/timed.length : null;
+  const fastest = timed.length ? timed.reduce((a,j) => jobTotal(j) < jobTotal(a) ? j : a) : null;
+  const byList = {}; done.forEach(j => jobLists(j).forEach(c => { const s = listSpan(j, c); if (s != null && listProgress(j,c).d === listProgress(j,c).t) (byList[c] = byList[c] || []).push({ job:j, ms:s }); }));
+  const det = ui.histDetail;
+  const jobLine = (j, ms) => `<button class="rowitem" data-job="${j.id}"><div><div class="n">${esc(j.vehicle)} <span class="s">· ${esc(j.client)}</span></div><div class="s">${fmtDate(j.date)} · ${fmtT(j.arrivedAt)} → ${fmtT(j.finishedAt)} · lead ${esc(userName(j.leadId))}</div></div><div class="big num">${fmtD(ms)}</div></button>`;
+  let detail = "";
+  if (det === "jobs") detail = `<div class="card">${done.map(j => jobLine(j, jobTotal(j))).join("") || `<div class="empty">Nothing yet.</div>`}</div>`;
+  else if (det === "avg") detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px;display:flex;justify-content:space-between"><b>How the average is built</b><span class="s">${timed.length} jobs · ${fmtD(avg)} avg</span></div>${timed.map(j => jobLine(j, jobTotal(j))).join("")}</div>`;
+  else if (det === "fastest" && fastest) detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px"><b>Fastest job</b></div>${jobLine(fastest, jobTotal(fastest))}</div>`;
+  else if (det && det.startsWith("list:")) { const c = det.slice(5); const a = byList[c] || []; detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px;display:flex;justify-content:space-between"><b>${esc(LISTS[c].title)} runs</b><span class="s">${a.length} · ${fmtD(a.reduce((x,y) => x+y.ms, 0)/(a.length||1))} avg</span></div>${a.sort((x,y) => y.job.finishedAt - x.job.finishedAt).map(r => jobLine(r.job, r.ms)).join("")}</div>`; }
+  app.innerHTML = topbar("History & stats", `${done.length} finished job${done.length === 1 ? "" : "s"} · tap any number to see what's behind it`, `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="stack">
      <div class="seg"><button class="${!mine ? "on" : ""}" data-f="all">Whole team</button><button class="${mine ? "on" : ""}" data-f="mine">My jobs</button></div>
-     <div class="statrow"><div class="stat"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></div><div class="stat"><div class="v num">${fmtD(avg)}</div><div class="k">Avg job time</div></div><div class="stat"><div class="v num">${fmtD(totals.length ? Math.min(...totals) : null)}</div><div class="k">Fastest job</div></div></div>
-     ${Object.keys(bySvc).length ? `<div class="card">${SOC_ORDER.filter(c => bySvc[c]).map(c => { const a = bySvc[c]; return `<div class="rowitem"><div><div class="n">${esc(SOC[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"}</div></div><div class="num" style="font-family:'Barlow Condensed';font-weight:700;font-size:20px">${fmtD(a.reduce((x,y) => x+y, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></div>`; }).join("")}</div>` : ""}
+     <div class="statrow"><button class="stat ${det === "jobs" ? "on" : ""}" data-det="jobs"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></button><button class="stat ${det === "avg" ? "on" : ""}" data-det="avg"><div class="v num">${fmtD(avg)}</div><div class="k">Avg time on site</div></button><button class="stat ${det === "fastest" ? "on" : ""}" data-det="fastest"><div class="v num">${fastest ? fmtD(jobTotal(fastest)) : "—"}</div><div class="k">Fastest job${fastest ? " · " + esc(fastest.vehicle) : ""}</div></button></div>
+     ${detail}
+     ${Object.keys(byList).length ? `<div class="sect-title"><h2>By checklist</h2><span class="s" style="color:var(--muted);font-size:12px">arrival → last phase</span></div><div class="card">${LIST_ORDER.filter(c => byList[c]).map(c => { const a = byList[c]; return `<button class="rowitem ${det === "list:"+c ? "on" : ""}" data-det="list:${c}" style="${det === "list:"+c ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(LISTS[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"} · tap to see each one</div></div><div class="big num">${fmtD(a.reduce((x,y) => x+y.ms, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>`; }).join("")}</div>` : ""}
+     <div class="sect-title"><h2>All finished jobs</h2></div>
      ${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
    </div></div>`;
-  wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; renderHistory(); });
+  wireNav();
+  app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; ui.histDetail = null; renderHistory(); });
+  app.querySelectorAll("[data-det]").forEach(b => b.onclick = () => { ui.histDetail = ui.histDetail === b.dataset.det ? null : b.dataset.det; renderHistory(); });
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
 }
 
 // ---------- team ----------
 function renderTeam(){
   if (!isOwner()) return go("home");
+  const ed = ui.editUser;
   app.innerHTML = topbar("Team", "Everyone who signs in on the job", `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="stack">
      <div class="card">${DB.users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${DB.jobs.filter(j => j.status === "done" && (j.leadId === u.id || j.techIds.includes(u.id))).length} jobs</div></div>
-        <div style="display:flex;gap:6px"><button class="btn small ghost" data-pw="${u.id}">Reset PW</button>${u.role !== "owner" ? `<button class="btn small ghost danger" data-rm="${u.id}">Remove</button>` : ""}</div></div>`).join("")}</div>
+        <div style="display:flex;gap:6px"><button class="btn small ghost" data-edit="${u.id}">Edit</button><button class="btn small ghost" data-pw="${u.id}">Reset PW</button>${u.role !== "owner" ? `<button class="btn small ghost danger" data-rm="${u.id}">Remove</button>` : ""}</div></div>
+        ${ed === u.id ? `<div class="editrow"><div class="stack">
+          <div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div>
+          <div class="field"><label>Username</label><input id="e_user" autocapitalize="none" value="${esc(u.username)}"></div>
+          <div class="err" id="e_err"></div>
+          <div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_cancel">Cancel</button></div>
+        </div></div>` : ""}`).join("")}</div>
      <div class="sect-title"><h2>Add a team member</h2></div>
      <div class="card" style="padding:14px"><div class="stack">
        <div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div>
@@ -803,6 +914,17 @@ function renderTeam(){
      <div class="hint">Accounts live on this phone only. Add the same people on each phone that runs the board.</div>
    </div></div>`;
   wireNav();
+  app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; renderTeam(); });
+  if (ed) {
+    const u = DB.users.find(x => x.id === ed);
+    $("#e_cancel").onclick = () => { ui.editUser = null; renderTeam(); };
+    $("#e_save").onclick = () => {
+      const name = $("#e_name").value.trim(), user = $("#e_user").value.trim().toLowerCase(), role = $("#e_role").value;
+      if (!name || !user) { $("#e_err").textContent = "Name and username are required."; return; }
+      if (DB.users.some(x => x.username === user && x.id !== u.id)) { $("#e_err").textContent = "That username is taken."; return; }
+      u.name = name; u.username = user; if (u.role !== "owner") u.role = role; save(); ui.editUser = null; toast("Saved"); renderTeam();
+    };
+  }
   $("#t_add").onclick = async () => {
     const name = $("#t_name").value.trim(), user = $("#t_user").value.trim().toLowerCase(), pw = $("#t_pw").value, role = $("#t_role").value;
     if (!name || !user || pw.length < 4) { $("#t_err").textContent = "Name, username and a 4+ character password are required."; return; }
@@ -824,31 +946,19 @@ function renderSettings(){
      </div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack">
-       <div class="s" style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div>
+       <div style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div>
        <div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>
        ${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}
      </div></div>
-     <div class="hint">3X Job Board · checklists rev 09/11/2026 · add to Home Screen for full-screen use</div>
+     <div class="hint">3X Job Board v2 · checklists rev 09/11/2026</div>
    </div></div>`;
   wireNav();
   app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
   $("#export").onclick = async () => { const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
-  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (d.v !== 1 || !Array.isArray(d.jobs)) throw 0; d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
+  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
   const w = $("#wipe"); if (w) w.onclick = () => { if (confirm("Erase all accounts, jobs and timing on this phone?") && confirm("Really erase? This cannot be undone.")) { localStorage.removeItem(KEY); location.reload(); } };
 }
-
-// ---------- storage health: warn when this browser won't keep data ----------
-function storageWarning(){
-  let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
-  let ok = true; try { localStorage.setItem("__3x_probe", "1"); ok = localStorage.getItem("__3x_probe") === "1"; localStorage.removeItem("__3x_probe"); } catch(e){ ok = false; }
-  if (ok && !framed) return "";
-  const why = !ok ? "This browser is blocking storage, so nothing you enter here will be kept."
-                  : "This page is running inside another site's frame (a preview). On iPhone that storage is wiped when you leave, so accounts and jobs won't survive.";
-  return `<div style="background:var(--warn-bg);color:var(--warn);padding:10px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--line)">⚠ ${why} Open the app at its own web address and add it to your Home Screen.</div>`;
-}
-const _render = render;
-render = function(){ _render(); const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w); };
 
 // ---------- boot ----------
 applyTheme();
