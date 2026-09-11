@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>3X Job Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --red:#EF1A2D; --red-ink:#C4101F; --ink:#0A0A0A;
+    --bg:#F3F3F5; --surface:#FFFFFF; --surface-2:#F8F8FA; --line:#E3E3E8; --line-2:#D3D3DA;
+    --text:#18181B; --muted:#6E6E78; --faint:#A0A0AA;
+    --good:#1B7A3A; --good-bg:#E6F4EA; --warn:#B45309; --warn-bg:#FEF3E2; --bad:#B91C1C;
+    --band:#0A0A0A; --band-text:#FAFAFA; --band-sub:#B8B8C0;
+    --chip:#ECECF0; --shadow:0 1px 2px rgba(10,10,10,.06), 0 4px 14px rgba(10,10,10,.05);
+    --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#111114; --surface:#1B1B1F; --surface-2:#232328; --line:#2B2B31; --line-2:#3A3A42;
+      --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
+      --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
+      --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --chip:#2A2A30;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#111114; --surface:#1B1B1F; --surface-2:#232328; --line:#2B2B31; --line-2:#3A3A42;
+    --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
+    --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
+    --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --chip:#2A2A30;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Barlow', -apple-system, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; overscroll-behavior-y:none; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  button { cursor:pointer; }
+  h1,h2,h3 { margin:0; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; text-wrap:balance; }
+  .num { font-variant-numeric: tabular-nums; }
+  .eyebrow { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+  a { color:inherit; }
+  :focus-visible { outline:2px solid var(--red); outline-offset:2px; }
+
+  /* ---------- app frame ---------- */
+  #app { display:flex; flex-direction:column; height:100dvh; }
+  .topbar { background:var(--ink); color:#FAFAFA; padding:calc(10px + var(--safe-t)) 14px 10px; flex:0 0 auto; }
+  .topbar .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:13px; letter-spacing:.16em; }
+  .topbar .brand b { color:var(--red); }
+  .topbar .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .topbar h1 { font-size:22px; font-weight:700; letter-spacing:.01em; line-height:1.1; margin-top:2px; }
+  .topbar .sub { color:#A9A9B3; font-size:12.5px; margin-top:2px; }
+  .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:7px 11px; font-weight:600; font-size:13px; white-space:nowrap; }
+  .topbar .tbtn.red { background:var(--red); border-color:var(--red); }
+  .main { flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px calc(96px + var(--safe-b)); }
+  .main.noscroll { overflow:hidden; padding:0; display:flex; flex-direction:column; }
+  .actionbar { position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line); padding:10px 12px calc(10px + var(--safe-b)); display:flex; gap:10px; z-index:20; }
+  .actionbar button { flex:1; padding:13px 12px; border:none; border-radius:10px; font-size:15px; font-weight:700; background:var(--chip); color:var(--text); }
+  .actionbar button.primary { background:var(--red); color:#fff; }
+  .actionbar button.narrow { flex:0 0 auto; padding-inline:16px; }
+
+  /* ---------- generic ---------- */
+  .card { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .stack { display:flex; flex-direction:column; gap:12px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:12.5px; font-weight:600; color:var(--muted); }
+  .field input, .field select, .field textarea { width:100%; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; }
+  .field textarea { min-height:84px; resize:vertical; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn { padding:12px 14px; border:none; border-radius:10px; font-weight:700; font-size:15px; background:var(--chip); color:var(--text); }
+  .btn.primary { background:var(--red); color:#fff; }
+  .btn.ghost { background:transparent; border:1px solid var(--line-2); }
+  .btn.small { padding:7px 11px; font-size:13px; border-radius:8px; }
+  .btn.danger { color:var(--bad); }
+  .btn:disabled { opacity:.45; }
+  .pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:600; background:var(--chip); color:var(--muted); white-space:nowrap; }
+  .pill.good { background:var(--good-bg); color:var(--good); }
+  .pill.warn { background:var(--warn-bg); color:var(--warn); }
+  .pill.red { background:var(--red); color:#fff; }
+  .pill.dark { background:var(--ink); color:#fff; }
+  .sect-title { display:flex; align-items:baseline; justify-content:space-between; margin:6px 2px 8px; }
+  .sect-title h2 { font-size:19px; font-weight:700; letter-spacing:.02em; }
+  .empty { padding:26px 16px; text-align:center; color:var(--muted); font-size:14px; }
+  .toast { position:fixed; left:50%; bottom:calc(84px + var(--safe-b)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-weight:600; font-size:14px; z-index:50; box-shadow:var(--shadow); opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; text-align:center; }
+  .toast.show { opacity:1; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .choice { padding:9px 12px; border-radius:9px; border:1px solid var(--line-2); background:var(--surface); font-weight:600; font-size:14px; }
+  .choice.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .choice small { display:block; font-weight:500; font-size:11.5px; color:var(--muted); }
+  .choice.on small { color:#B8B8C0; }
+
+  /* ---------- login ---------- */
+  .login { max-width:420px; margin:0 auto; padding-top:8vh; }
+  .login .mark { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:44px; letter-spacing:.06em; line-height:1; }
+  .login .mark b { color:var(--red); }
+  .login .tag { color:var(--muted); font-size:13px; margin:4px 0 22px; }
+  .login .card { padding:18px 16px; }
+  .err { color:var(--bad); font-size:13.5px; font-weight:600; min-height:18px; }
+
+  /* ---------- home ---------- */
+  .jobcard { display:block; width:100%; text-align:left; background:var(--surface); border:none; border-radius:12px; box-shadow:var(--shadow); padding:0; overflow:hidden; color:inherit; }
+  .jobcard .jc-body { padding:12px 14px 10px; }
+  .jobcard .jc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .jobcard h3 { font-size:21px; font-weight:700; letter-spacing:.01em; line-height:1.05; }
+  .jobcard .jc-client { color:var(--muted); font-size:13.5px; margin-top:2px; }
+  .jobcard .jc-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
+  .jobcard .bar { height:5px; background:var(--chip); }
+  .jobcard .bar i { display:block; height:100%; background:var(--red); transition:width .25s; }
+  .jobcard.done .bar i { background:var(--good); }
+  .statrow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .stat { background:var(--surface); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); }
+  .stat .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:26px; line-height:1; }
+  .stat .k { font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+  /* ---------- job screen ---------- */
+  .jobhead { background:var(--ink); color:#FAFAFA; padding:0 14px 10px; }
+  .carchips { display:flex; gap:8px; overflow-x:auto; padding:2px 14px 8px; scrollbar-width:none; background:var(--ink); }
+  .carchips::-webkit-scrollbar { display:none; }
+  .carchip { flex:0 0 auto; border-radius:8px; padding:6px 11px; background:#232328; color:#D6D6DC; border:1px solid #33333A; font-weight:600; font-size:13px; white-space:nowrap; }
+  .carchip.on { background:#fff; color:var(--ink); border-color:#fff; }
+  .carchip.on i { color:var(--red); font-style:normal; }
+  .jobhead .times { display:flex; gap:8px; margin-top:8px; }
+  .tbox { flex:1; background:#1A1A1E; border:1px solid #2C2C33; border-radius:9px; padding:7px 10px; }
+  .tbox .k { font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:#8E8E99; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; }
+  .tbox .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:22px; line-height:1.05; margin-top:1px; }
+  .tbox .v.red { color:var(--red); }
+  .tbox button { all:unset; display:block; width:100%; cursor:pointer; }
+  .tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--line); flex:0 0 auto; }
+  .tab { flex:1; padding:10px 8px 8px; border:none; background:none; text-align:center; position:relative; }
+  .tab .t { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:15px; letter-spacing:.03em; text-transform:uppercase; }
+  .tab .p { font-size:11.5px; color:var(--muted); margin-top:1px; }
+  .tab .bar { height:3px; background:var(--chip); margin-top:6px; border-radius:2px; overflow:hidden; }
+  .tab .bar i { display:block; height:100%; background:var(--red); }
+  .tab.on .bar { background:var(--line-2); }
+  .tab.on::after { content:""; position:absolute; left:10%; right:10%; bottom:-1px; height:2px; background:var(--ink); }
+  .panes { flex:1 1 auto; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .panes::-webkit-scrollbar { display:none; }
+  .pane { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px calc(96px + var(--safe-b)); }
+  .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; }
+  .band { background:var(--band); color:var(--band-text); padding:8px 13px 7px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .band .l { min-width:0; }
+  .band .l b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:15.5px; letter-spacing:.03em; text-transform:uppercase; }
+  .band .l b em { color:var(--red); font-style:normal; }
+  .band .l small { display:block; color:var(--band-sub); font-size:11.5px; margin-top:1px; }
+  .band .r { text-align:right; flex:0 0 auto; }
+  .band .r .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; line-height:1; }
+  .band .r .d.live { color:#B8B8C0; }
+  .band .r .d.done { color:#7BE29A; }
+  .band .r .w { font-size:10.5px; color:var(--band-sub); margin-top:2px; white-space:nowrap; }
+  .policy { padding:9px 13px 3px; font-size:12.5px; color:var(--muted); font-style:italic; }
+  .item { display:flex; gap:11px; align-items:flex-start; padding:11px 13px; border-top:1px solid var(--line); }
+  .item .box { flex:0 0 26px; height:26px; margin-top:1px; border:2px solid var(--line-2); border-radius:7px; background:var(--surface); display:grid; place-items:center; color:#fff; font-size:15px; font-weight:800; }
+  .item.done .box { background:var(--red); border-color:var(--red); }
+  .item .txt { flex:1; min-width:0; font-size:14.5px; line-height:1.35; }
+  .item.done .txt { color:var(--muted); }
+  .item .meta { display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap; }
+  .item .stamp { font-size:12px; font-weight:600; color:var(--good); background:var(--good-bg); border-radius:6px; padding:2px 7px; border:none; }
+  .item .notebtn { font-size:12px; font-weight:600; color:var(--muted); background:var(--chip); border:none; border-radius:6px; padding:2px 8px; }
+  .item .flag { font-size:12.5px; color:var(--warn); background:var(--warn-bg); border-radius:6px; padding:4px 8px; margin-top:6px; }
+  .listnotes { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; }
+  .listnotes label { font-size:12.5px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
+  .listnotes textarea { width:100%; min-height:80px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
+  .hint { color:var(--muted); font-size:12.5px; text-align:center; padding:6px 10px 0; font-style:italic; }
+
+  /* ---------- report ---------- */
+  .report { max-width:640px; margin:0 auto; }
+  .report .head { background:var(--ink); color:#FAFAFA; border-radius:12px; padding:14px 16px; }
+  .report .head h2 { font-size:26px; font-weight:700; line-height:1.05; }
+  .report .head .sub { color:#B8B8C0; font-size:13px; margin-top:3px; }
+  .report .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:13.5px; margin-top:10px; }
+  .report .kv b { color:#8E8E99; font-weight:600; }
+  .report table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .report th { text-align:left; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-size:12px; color:var(--muted); padding:8px 12px 6px; border-bottom:1px solid var(--line); }
+  .report td { padding:7px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .report td.r, .report th.r { text-align:right; white-space:nowrap; }
+  .report tr.ph td { background:var(--surface-2); font-weight:700; }
+  .report tr.ph td em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; letter-spacing:.03em; margin-right:6px; }
+  .report tr.miss td { color:var(--bad); }
+  .report .note { padding:10px 12px; font-size:13.5px; white-space:pre-wrap; }
+  .report .lt { display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px 4px; }
+  .report .lt h3 { font-size:19px; font-weight:700; letter-spacing:.02em; }
+  .report .lt .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:20px; }
+
+  /* ---------- team / history ---------- */
+  .rowitem { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--line); }
+  .rowitem:first-child { border-top:none; }
+  .rowitem .n { font-weight:600; }
+  .rowitem .s { color:var(--muted); font-size:12.5px; }
+  .seg { display:flex; background:var(--chip); border-radius:9px; padding:3px; }
+  .seg button { flex:1; border:none; background:transparent; padding:7px; border-radius:7px; font-weight:600; font-size:13px; color:var(--muted); }
+  .seg button.on { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } .panes { scroll-behavior:auto; } }
+  @media (min-width: 720px) { .main { padding-inline:calc((100vw - 680px)/2); } .pane { padding-inline:calc((100vw - 680px)/2); } .carchips, .jobhead, .topbar { padding-inline:calc((100vw - 680px)/2 + 14px); } .actionbar { padding-inline:calc((100vw - 680px)/2); } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   3X JOB BOARD · offline job checklist runner for 3X Detailing
+   Single-file web app. All data lives in this browser (localStorage).
+   ===================================================================== */
+
+// ---------- Checklist library (mirrors 3XD SOC001–006, rev 09/11/2026) ----------
+const CLOSEOUT_POLICY = "Policy: if possible and only with the owner's permission, move the vehicle into a garage or sheltered area after service. If not possible, contact the customer and confirm it's fine to leave the car outside and where the keys should go.";
+const CLOSEOUT_STEPS = [
+  "Car moved into garage / sheltered area — ONLY with owner's permission · ask BEFORE the last phase, not after",
+  "No shelter possible? → client contacted: OK to leave outside? + where the key goes · answer written in job notes",
+  "Key handed to client in person · or placed EXACTLY where agreed — never assumed, never left in the car unasked",
+  "Job site fully cleaned: no towels, bottles, hoses, puddles, trash · as clean or cleaner than we found it",
+  "Photos → Sam: finished car (all angles) · cleaned-up job site · key location (if not handed over)"
+];
+const closeout = n => [n, "VEHICLE SECURING & SITE CLOSE-OUT", "~5 min · the job isn't done until the car is protected", CLOSEOUT_STEPS, CLOSEOUT_POLICY];
+
+const SOC = {
+ SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", short:"Interior", group:"Maintenance", phases:[
+  ["PHASE 1","UNLOAD & SETUP","~5 min",[
+   "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
+   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)",
+   "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
+  ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~1–2 min",[
+   "Pre-existing damage / heavy staining photographed → sent to Sam BEFORE starting",
+   "Game plan set: light vs heavy interior cleaner · air compressor? · condition fee needed? (ask early)"]],
+  ["PHASE 3","INTERIOR PREP","~1–2 min",[
+   "All doors opened · trash out · blocking items into clear baggies → truck back seat",
+   "Glovebox items untouched · packed console = ask client first"]],
+  ["PHASE 4","INTERIOR VACUUM","3–13 min · top-to-bottom, middle-to-exit",[
+   "Front cabin both sides: dash, vents, wheel, console, door compartments, floor, door face",
+   "Seat backs · second/third row · trunk (+ frunk) · correct attachment per surface",
+   "Piano black / glossy / vents: SOFT DUSTING BRUSH ONLY, vacuum held nearby",
+   "80–90% perfection — skipped what was already clean"]],
+  ["PHASE 5","INTERIOR WIPE-DOWN","5–15 min · same path · skip floor & seats",[
+   "Interior cleaner on towel/brush (never the surface) · every surface buffed DRY, zero residue",
+   "Steering wheel + center console flawless (highest-touch areas)",
+   "Vents/buttons: soft brush + towel + air blaster · screens: towel only"]],
+  ["PHASE 6","INTERIOR WINDOWS","3–7 min max · shade/cool only",[
+   "All interior glass wiped edge-to-edge + buffed streak-free (angle-check in light)",
+   "Touchscreens & displays cleaned — spray towel, never the screen"]],
+  ["PHASE 7","SEATS & WRAP-UP","5–8 min",[
+   "All seats top-to-bottom incl. sides: dust if clean · wipe+buff if dirty · scrub pad if stained",
+   "Belongings returned neatly to passenger seat",
+   "Final visual scan — anything missed gets redone NOW"]],
+  closeout("PHASE 8")
+ ]},
+ SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", short:"Exterior", group:"Maintenance", phases:[
+  ["PHASE 1","UNLOAD & SETUP","~5 min",[
+   "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
+   "Generator on · pressure washer, water pump plugged in · bucket sudsed & pressurized"]],
+  ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~1–2 min",[
+   "Pre-existing damage photographed (scratches/dents/chips/curbs) → sent to Sam BEFORE starting",
+   "Game plan set: full foam pre-wash or thorough pre-rinse only? · shade & surface temps checked"]],
+  ["PHASE 3","WHEELS, WELLS & TIRES","~6–10 min · clock method · cool surface first",[
+   "Per wheel: rinse → APC well+tire → scrub → wheel cleaner → barrel, caliper, face, behind spokes, lugs → rinse",
+   "Finger test + flashlight passed on EVERY wheel before moving on",
+   "Brushes cleaned between uses · pressure gun never touched the rim"]],
+  ["PHASE 4","PRE-WASH (CONTACTLESS)","~3–6 min · never let foam dry",[
+   "Large debris cleared (cowl, roof, under hood) — blower never touches paint",
+   "Dirty car: APC on rockers/grille → gas cap open → foam bottom-to-top → dwell 2–3 min → rinse",
+   "Just dusty: skipped foam, THOROUGH pre-rinse on every surface instead"]],
+  ["PHASE 5","CONTACT WASH","~4–7 min · robot path · top-to-bottom",[
+   "Foamed again · two-mitt method front → glass/roof → sides · mitts cleaned/swapped at rinse bucket",
+   "Mitt NEVER dirty on paint · suds never allowed to dry · stubborn spots noted for Phase 9 (no grinding)",
+   "NOT rinsed yet — went straight to sealant on suds"]],
+  ["PHASE 6","SPRAY-ON PAINT SEALANT","~1–2 min · work FAST",[
+   "IK foamer at max pressure · sealant over entire car incl. wheels & tires, onto the suds",
+   "Immediate thorough top-to-bottom rinse — zero chemical left on surface"]],
+  ["PHASE 7","HAND-DRY + DOOR JAMS","~4–8 min · hot day = paint & glass FIRST",[
+   "Jams (+ gas cap, trunk, frunk) dried with all-purpose towels · then closed up",
+   "Blow-dry: bulk water top-to-bottom → emblems, grilles, wipers, mirrors, crevices → wheels",
+   "Large towel = body · small towel = lower panels · towels NEVER touch the ground"]],
+  ["PHASE 8","RIM & TIRE FINISH","~3–5 min · wheel-by-wheel",[
+   "Each wheel dried + final QC'd · dressing applied EVEN on every sidewall",
+   "Rim edges wiped clean of dressing · second pass: excess buffed off all four tires"]],
+  ["PHASE 9","QUALITY INSPECTION & WRAP-UP","~2–5 min max",[
+   "Walked every phase with flashlight · spot-cleaned misses (cool surface, buffed dry)",
+   "Every note fixed before leaving · job photos/notes sent to Sam"]],
+  closeout("PHASE 10")
+ ]},
+ SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", short:"Interior", group:"Deep Clean", phases:[
+  ["PHASE 1","UNLOAD & SETUP","~5 min",[
+   "Table staged for display · generator on · vacuum, pressure washer, water pump + AIR COMPRESSOR plugged in",
+   "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
+  ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~2–3 min",[
+   "Pre-existing damage photographed → sent to Sam BEFORE starting",
+   "Game plan: headliner spots? stained fabric? pet hair (+$50)? heavy staining upcharge? — raised with client EARLY"]],
+  ["PHASE 3","INTERIOR PREP","~1–3 min",[
+   "All doors opened · trash out · blocking items into clear baggies → truck back seat",
+   "Glovebox items untouched · packed console = ask client first"]],
+  ["PHASE 4","FLOOR MATS OUT & DETAILED VACUUM","~15–25 min · air + vacuum combo",[
+   "ALL mats out: rubber = full wash (rinse, APC, scrub, rinse, dry) · carpet = vacuum + spot-clean",
+   "Blow out carpets, cup holders, cracks & crevices with compressed air → vacuum the loosened debris",
+   "Full robot path: front cabin both sides, seat backs, rows, trunk (+ frunk) · carpet UNDER mats cleaned",
+   "Deep crevice finish: seat rails, under seats, console gaps — air + vacuum until nothing comes out",
+   "Piano black / glossy / vents: soft dusting brush ONLY · pet hair = air + pet-hair brushes"]],
+  ["PHASE 5","HEADLINER","~3–8 min",[
+   "Full inspection in good light · every spot cleaned (cleaner on towel, light pressure, NEVER soaked)"]],
+  ["PHASE 6","DEEP WIPE-DOWN","~20–30 min · the heart of the deep clean",[
+   "Every surface robot-path: scrub pad on durable surfaces · brush in EVERY seam, vent & crevice · buff dry",
+   "Pedals + footwell plastics deep-scrubbed with brush & APC",
+   "Crevices blown out with air blaster · multiple passes until like-new",
+   "Scrub pad NEVER on piano black, glossy trim, screens, or soft leather"]],
+  ["PHASE 7","INTERIOR WINDOWS","~3–7 min",[
+   "All glass + screens + displays streak-free (spray towel never glass, buff dry, angle-check in light)"]],
+  ["PHASE 8","SEATS & STAIN TREATMENT","~10–20 min",[
+   "Every seat top-to-bottom incl. sides · scrub pad on dirty areas · brush along seams",
+   "Fabric stains: drill brush + APC, repeat passes · moisture worked back out with dry towels"]],
+  ["PHASE 9","REASSEMBLY, FINAL VACUUM & WRAP-UP","~5–10 min",[
+   "Dry mats reinstalled + clipped · seats returned to normal · final vacuum front → rear",
+   "Belongings returned neatly · flashlight walk of every phase — anything not like-new redone NOW"]],
+  closeout("PHASE 10")
+ ]},
+ SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", short:"Exterior", group:"Deep Clean", phases:[
+  ["PHASE 1","UNLOAD & SETUP","~5 min",[
+   "Table staged · generator on · pressure washer + water pump plugged in · bucket sudsed & pressurized",
+   "LARGE stack of fresh wash mitts staged (deep clean burns through mitts)"]],
+  ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~2–3 min",[
+   "Pre-existing damage photographed (scratches/dents/chips/curbs) → sent to Sam BEFORE starting",
+   "Contamination mapped: bugs, tar, water spots, brake dust · beyond-wash issues flagged for decon upsell"]],
+  ["PHASE 3","WHEELS, WELLS & TIRES","~8–15 min · clock method · cool first",[
+   "Per wheel: rinse → APC well+tire → scrub → wheel cleaner → barrel, caliper, face, behind spokes, lugs → rinse",
+   "Stronger cleaner + second passes on built-up brake dust · finger test + flashlight on EVERY wheel",
+   "Brushes cleaned between uses · pressure gun never touched the rim"]],
+  ["PHASE 4","HEAVY-SOIL PRE-SOAK & PRE-WASH","~5–10 min · MANDATORY",[
+   "Large debris cleared (cowl, roof, under hood) — blower never touches paint",
+   "Bug remover soaked on front end · APC on rockers/grille/flagged zones",
+   "Gas cap open → full foam bottom-to-top → dwell 2–3 min (hot: 30–60 sec) → thorough rinse",
+   "NOTHING allowed to dry — dwell times tracked"]],
+  ["PHASE 5","CONTACT WASH + EXHAUST TIPS","~8–15 min · MANDATORY · robot path",[
+   "Foamed · two-mitt method front → glass/roof → sides → rear · fresh mitts swapped often",
+   "Stubborn spots: minimally increased pressure + extra passes through the chenille mitt · still stuck = Phase 9",
+   "Exhaust tips deep-cleaned: wheel cleaner/APC · barrel brush inside · fitting brushes outside",
+   "NOT rinsed yet — straight to sealant on suds"]],
+  ["PHASE 6","SPRAY-ON PAINT SEALANT","~1–2 min · work FAST",[
+   "IK foamer max pressure · sealant over entire car incl. wheels & tires, onto the suds",
+   "Immediate thorough top-to-bottom rinse — zero chemical left on surface"]],
+  ["PHASE 7","HAND-DRY + DOOR JAMS","~6–12 min · hot day = paint & glass FIRST",[
+   "Jams (+ gas cap, trunk, frunk) dried with all-purpose towels · APC on stuck spots · then closed up",
+   "Blow-dry: bulk water → emblems, grilles, wipers, mirrors, crevices → wheels",
+   "Large towel = body · small towel = lower panels · towels NEVER touch the ground"]],
+  ["PHASE 8","RIM & TIRE FINISH","~4–6 min · wheel-by-wheel",[
+   "Each wheel dried + final QC'd · dressing EVEN on every sidewall · rim edges wiped",
+   "Second pass: excess buffed off all four tires"]],
+  ["PHASE 9","BUG, TAR & SPOT TREATMENT","~5–15 min",[
+   "Panel-by-panel spot hunt in good light · APC on fresh microfiber FIRST → solvent cleaner if needed",
+   "Light-to-moderate pressure · chemical buffed off immediately · cool surfaces only",
+   "Survivors = decon territory: photographed + flagged to Sam, not fought"]],
+  ["PHASE 10","QUALITY INSPECTION & WRAP-UP","~3–7 min",[
+   "Flashlight walk from Phase 3 · every note fixed before leaving · photos/notes sent to Sam"]],
+  closeout("PHASE 11")
+ ]},
+ SOC005: { code:"SOC005", sop:"SOP005", title:"Decon & Ceramic Seal", short:"Decon", group:"Add-on", phases:[
+  ["PHASE D1","CHEMICAL DECON — IRON REMOVER","runs right after the Contact Wash · car still wet & sudsy",[
+   "Iron remover applied to ENTIRE car: paint, wheels, trim, glass — everything",
+   "Dwell = product instructions exactly · NEVER allowed to dry · cool surfaces & shade rules apply",
+   "Near end of dwell: contact-wash foam layered on top as clay lubrication"]],
+  ["PHASE D2","MECHANICAL DECON — CLAY TOWEL","before the spray-on sealant phase",[
+   "Clay towel dunked in wash bucket · straight lines side-to-side, NEVER circles",
+   "Minimal-to-moderate pressure · stubborn spots = more passes + elbow grease",
+   "Each section worked until COMPLETELY smooth to towel and hand · full panel dialed in before moving on",
+   "Towel flipped to a fresh side whenever one loads up · dropped towel = thorough bucket wash before reuse",
+   "Paint + glass clayed · wheels NOT clayed · matte surfaces NEVER clayed (PPF/vinyl: gentle, away from edges)",
+   "Then back to the exterior SOP: sealant-on-suds → rinse → hand-dry → rim & tire → spot treatment"]],
+  ["PHASE D3","HAND-APPLIED CERAMIC SEALANT","very END of job · car fully dry & perfected first",[
+   "Prerequisites confirmed: bone-dry car · spot treatment done · wheels + tire dressing perfect",
+   "Two-towel method: applicator (swapped when soaked) + perfectly dry clean buffer (swapped the moment it's damp)",
+   "2–3 sprays per half-panel section · windy day = spray into towel, never the panel",
+   "Cross-hatch spread (up-down + side-side) → buffed IMMEDIATELY — one or two sections at a time, never outrun the buff",
+   "Panel order: sides/front/back first — roof & hood LAST · coverage: paint, glass, trim, carbon — NOT wheels",
+   "Every section inspected from multiple angles + light sources — ZERO high spots or streaks",
+   "Cool, dry, shaded panels only · flash-dried high spot rescue = exterior APC + clean microfiber, then re-apply",
+   "Client told: 4–6 months of protection depending on how the car is treated"]],
+  closeout("PHASE D4")
+ ]},
+ SOC006: { code:"SOC006", sop:"SOP006", title:"Engine Bay", short:"Engine Bay", group:"Add-on", phases:[
+  ["PHASE E1","SAFETY GATE & PROTECTION","~5 min · cool to the touch or WAIT",[
+   "Client confirmed car not driven recently · every surface cool to the touch",
+   "Delicate/exotic/vintage bay screened by photo BEFORE accepting — declined if dangerous",
+   "Covered w/ tucked baggies: alternator · exposed intakes/filters · fuse box · battery terminals · open connectors · coil packs",
+   "Classic/vintage: extra coverage, minimal water planned"]],
+  ["PHASE E2","DRY PREP","~2–3 min",[
+   "Leaves, acorns, sticks blown/vacuumed out (cowl + hood channels) — quick, no overworking"]],
+  ["PHASE E3","DEGREASE, AGITATE & RINSE","~10–25 min · condition-driven loop",[
+   "APC/degreaser applied UNDILUTED to DRY bay + hood underside → thorough rinse",
+   "Second APC pass → agitated with wheel brush set into intricate areas — GENTLE on hoses, wiring, clips",
+   "Rinsed again · loop repeated until clean",
+   "Pressure washer ~12 in back, wide misting pattern — never jetted into components"]],
+  ["PHASE E4","QUALITY CHECK — FINGER TEST","~2 min",[
+   "Finger dragged across surfaces throughout the bay — comes back CLEAN everywhere",
+   "Any dirt = back to the E3 loop on that area, then re-tested"]],
+  ["PHASE E5","UNCOVER, HAND-CLEAN, SEAL & AIR DRY","~5–8 min + air dry",[
+   "Covers removed · every covered area hand-cleaned: microfiber + a little APC (spray towel, never component)",
+   "Spot-free water confirmed · sealant applied onto the WET bay",
+   "Hood closed · air dries — no wiping · exterior wash follows and clears all overspray"]]
+ ], footer:"Vehicle Securing & Site Close-Out runs at the end of the exterior checklist — not here." }
+};
+const SOC_ORDER = ["SOC001","SOC002","SOC003","SOC004","SOC005","SOC006"];
+const PACKAGES = [
+  { name:"Complete Maintenance Detail", socs:["SOC001","SOC002"] },
+  { name:"Interior & Exterior Deep Clean", socs:["SOC003","SOC004"] }
+];
+const ROLES = { owner:"Owner", lead:"Team Lead", tech:"Technician" };
+
+// ---------- persistence ----------
+const KEY = "3x_jobboard_v1";
+let DB = load();
+function load(){
+  try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (d && d.v === 1) return d; } catch(e){}
+  return { v:1, users:[], jobs:[], session:null, theme:"auto" };
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ toast("Could not save — storage full or blocked"); } }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+// ---------- password hashing (local gate, not bank-grade) ----------
+async function hashPw(pw, salt){
+  const s = salt + "|" + pw;
+  if (window.crypto && crypto.subtle) {
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+      return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    } catch(e){}
+  }
+  let h1 = 0x811c9dc5, h2 = 5381;
+  for (let i=0;i<s.length;i++){ const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = ((h2 << 5) + h2 + c) >>> 0; }
+  return "f:" + h1.toString(16) + h2.toString(16);
+}
+
+// ---------- time helpers ----------
+const fmtT = ts => ts ? new Date(ts).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) : "—";
+const fmtDate = d => { const [y,m,dd] = d.split("-"); return new Date(+y, +m-1, +dd).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}); };
+function fmtD(ms){
+  if (ms == null || ms < 0) return "—";
+  const s = Math.round(ms/1000); if (s < 60) return s + "s";
+  const m = Math.floor(s/60), h = Math.floor(m/60);
+  return h ? `${h}h ${String(m%60).padStart(2,"0")}m` : `${m}m`;
+}
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+function setTimeOfDay(baseTs, hhmm){ // "7:05" or "7:05 pm"
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m?)?\s*$/i.exec(hhmm || ""); if (!m) return null;
+  let h = +m[1], mi = +(m[2]||0); const ap = (m[3]||"").toLowerCase();
+  if (ap.startsWith("p") && h < 12) h += 12; if (ap.startsWith("a") && h === 12) h = 0;
+  if (h > 23 || mi > 59) return null;
+  const d = new Date(baseTs || Date.now()); d.setHours(h, mi, 0, 0); return d.getTime();
+}
+
+// ---------- job computations ----------
+function listItemsCount(code){ return SOC[code].phases.reduce((n,p) => n + p[3].length, 0); }
+function listDone(job, code){ return Object.keys(job.lists[code].checks).length; }
+function listLastCheck(job, code){ const v = Object.values(job.lists[code].checks); return v.length ? Math.max(...v) : null; }
+function listFirstCheck(job, code){ const v = Object.values(job.lists[code].checks); return v.length ? Math.min(...v) : null; }
+function phaseStats(job, code){
+  const L = job.lists[code]; const out = []; let prevEnd = job.arrivedAt || listFirstCheck(job, code) || null;
+  SOC[code].phases.forEach((ph, pi) => {
+    const items = ph[3]; const ts = items.map((_, ii) => L.checks[pi+"_"+ii]).filter(Boolean);
+    const done = ts.length, total = items.length, complete = done === total;
+    const endAt = complete ? Math.max(...ts) : null;
+    const startAt = prevEnd;
+    const st = { pi, done, total, complete, startAt, endAt, duration: (complete && startAt != null) ? endAt - startAt : null, running: !complete && done > 0 };
+    out.push(st);
+    if (complete) prevEnd = endAt;
+  });
+  return out;
+}
+function jobProgress(job){ let d=0,t=0; job.services.forEach(c => { d += listDone(job,c); t += listItemsCount(c); }); return {d,t,pct: t ? Math.round(100*d/t) : 0}; }
+function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; job.services.forEach(c => { const l = listLastCheck(job,c); if (l && l > m) m = l; }); return m; }
+function jobTotal(job){ if (!job.arrivedAt) return null; return (job.finishedAt || Date.now()) - job.arrivedAt; }
+const userName = id => (DB.users.find(u => u.id === id) || {}).name || "—";
+const me = () => DB.users.find(u => u.id === (DB.session && DB.session.userId)) || null;
+const isOwner = () => (me() || {}).role === "owner";
+
+// ---------- report text ----------
+function reportText(job){
+  const L = [];
+  L.push("3X DETAILING — JOB REPORT");
+  L.push(`${job.vehicle} · ${job.client}`);
+  L.push(`${fmtDate(job.date)} · Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`);
+  L.push(`Services: ${job.services.map(c => SOC[c].title).join(" + ")}`);
+  L.push(`Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · Total ${fmtD(jobTotal(job))}`);
+  if (job.finishNote) L.push(`Finished with open items: ${job.finishNote}`);
+  job.services.forEach(code => {
+    const S = SOC[code]; const st = phaseStats(job, code); const done = listDone(job, code), tot = listItemsCount(code);
+    const first = job.arrivedAt || listFirstCheck(job, code), last = listLastCheck(job, code);
+    L.push(""); L.push(`${S.title.toUpperCase()} (3XD ${code}) — ${done}/${tot} · ${first && last ? fmtD(last - first) : "—"}`);
+    S.phases.forEach((ph, pi) => {
+      const s = st[pi];
+      L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : `${s.done}/${s.total} done`}`);
+      ph[3].forEach((txt, ii) => {
+        const k = pi+"_"+ii; const ts = job.lists[code].checks[k]; const fl = job.lists[code].flags[k];
+        L.push(`   ${ts ? "✓ " + fmtT(ts) : "✗ NOT DONE"}  ${txt}${fl ? `  ⚑ ${fl}` : ""}`);
+      });
+    });
+    if (job.lists[code].notes) L.push(` Notes: ${job.lists[code].notes}`);
+  });
+  if (job.notes) { L.push(""); L.push(`JOB NOTES: ${job.notes}`); }
+  L.push(""); L.push("Get it perfect. Keep it perfect.");
+  return L.join("\n");
+}
+
+// ---------- UI state ----------
+const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", newjob:null };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = sel => document.querySelector(sel);
+const app = document.getElementById("app");
+let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
+function applyTheme(){ const r = document.documentElement; if (DB.theme === "light" || DB.theme === "dark") r.setAttribute("data-theme", DB.theme); else r.removeAttribute("data-theme"); }
+function go(screen, extra){ Object.assign(ui, {screen}, extra || {}); render(); window.scrollTo(0,0); }
+
+// ---------- render root ----------
+let liveTimer = null;
+function render(){
+  clearInterval(liveTimer); liveTimer = null;
+  if (!DB.users.length) return renderSetup();
+  if (!me()) return renderLogin();
+  ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
+}
+function topbar(title, sub, right){
+  return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px">${right || ""}</div></div></div>`;
+}
+
+// ---------- first-run setup ----------
+function renderSetup(){
+  app.innerHTML = `<div class="main"><div class="login">
+    <div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">First run on this phone. Create the owner account — it manages the team.</div>
+    <div class="card stack">
+      <div class="field"><label>Your name</label><input id="s_name" placeholder="Sam Schlaich" autocomplete="off"></div>
+      <div class="field"><label>Username</label><input id="s_user" placeholder="sam" autocapitalize="none" autocomplete="off"></div>
+      <div class="field"><label>Password</label><input id="s_pw" type="password" placeholder="at least 4 characters"></div>
+      <div class="err" id="s_err"></div>
+      <button class="btn primary" id="s_go">Create owner account</button>
+    </div></div></div>`;
+  $("#s_go").onclick = async () => {
+    const name = $("#s_name").value.trim(), user = $("#s_user").value.trim().toLowerCase(), pw = $("#s_pw").value;
+    if (!name || !user || pw.length < 4) { $("#s_err").textContent = "Name, username and a 4+ character password are required."; return; }
+    const salt = uid(); DB.users.push({ id:uid(), name, username:user, role:"owner", salt, hash: await hashPw(pw, salt), createdAt:Date.now() });
+    DB.session = { userId: DB.users[0].id }; save(); go("home");
+  };
+}
+
+// ---------- login ----------
+function renderLogin(){
+  app.innerHTML = `<div class="main"><div class="login">
+    <div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Sign in to run today's checklists.</div>
+    <div class="card stack">
+      <div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div>
+      <div class="err" id="l_err"></div>
+      <button class="btn primary" id="l_go">Sign in</button>
+    </div>
+    <div class="hint">Accounts are created by the owner in Team.</div></div></div>`;
+  const tryLogin = async () => {
+    const u = DB.users.find(x => x.username === $("#l_user").value.trim().toLowerCase());
+    if (!u || (await hashPw($("#l_pw").value, u.salt)) !== u.hash) { $("#l_err").textContent = "Wrong username or password."; return; }
+    DB.session = { userId:u.id }; save(); go("home");
+  };
+  $("#l_go").onclick = tryLogin; $("#l_pw").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
+  setTimeout(() => $("#l_user").focus(), 50);
+}
+
+// ---------- home ----------
+function jobCard(job){
+  const p = jobProgress(job); const done = job.status === "done";
+  const meta = [
+    `<span class="pill dark">${esc(userName(job.leadId))}</span>`,
+    ...job.services.map(c => `<span class="pill">${esc(SOC[c].title)}</span>`),
+    done ? `<span class="pill good">Done · ${fmtD(jobTotal(job))}</span>` : (job.arrivedAt ? `<span class="pill warn num">On site · <span data-live="total-${job.id}">${fmtD(jobTotal(job))}</span></span>` : `<span class="pill">Not arrived</span>`)
+  ].join("");
+  return `<button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t}</div></div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button>`;
+}
+function renderHome(){
+  const u = me(); const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => jobLastActivity(b) - jobLastActivity(a));
+  const recent = DB.jobs.filter(j => j.status === "done").sort((a,b) => b.finishedAt - a.finishedAt).slice(0,3);
+  app.innerHTML = topbar(`Hey, ${u.name.split(" ")[0]}`, `${ROLES[u.role]} · ${new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"})}`,
+      `<button class="tbtn" data-go="settings">⚙</button>`) +
+    `<div class="main"><div class="stack">
+      <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
+      ${active.length ? active.map(jobCard).join("") : `<div class="card empty">No cars on the board. Start a job when you pull up.</div>`}
+      <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><button class="btn small ghost" data-go="history">History & stats</button></div>
+      ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">Finished jobs show up here with their timing.</div>`}
+      ${isOwner() ? `<button class="btn ghost" data-go="team">Manage team</button>` : ""}
+    </div></div>
+    <div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
+  wireNav(); app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
+  liveTimer = setInterval(() => DB.jobs.filter(j => j.status === "active" && j.arrivedAt).forEach(j => { const el = app.querySelector(`[data-live="total-${j.id}"]`); if (el) el.textContent = fmtD(jobTotal(j)); }), 1000);
+}
+function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
+function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) return; if (job.status === "done") go("report", {jobId:id}); else go("job", {jobId:id, pane:0}); }
+
+// ---------- new job ----------
+function renderNewJob(){
+  const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", services:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
+  const people = DB.users;
+  app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" data-go="home">Cancel</button>`) +
+   `<div class="main"><div class="stack">
+    <div class="card" style="padding:14px"><div class="stack">
+      <div class="grid2">
+        <div class="field"><label>Date</label><input id="n_date" type="date" value="${nj.date}"></div>
+        <div class="field"><label>Team lead</label><select id="n_lead">${people.map(p => `<option value="${p.id}" ${p.id === nj.leadId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
+      </div>
+      <div class="field"><label>Client name</label><input id="n_client" placeholder="Lars Letenoff" value="${esc(nj.client)}"></div>
+      <div class="field"><label>Vehicle</label><input id="n_vehicle" placeholder="Ferrari 296 GTB" value="${esc(nj.vehicle)}"></div>
+      <div class="field"><label>Technicians on this car</label><div class="chips" id="n_techs">${people.filter(p => p.id !== nj.leadId).map(p => `<button class="choice ${nj.techIds.includes(p.id) ? "on" : ""}" data-tech="${p.id}">${esc(p.name)}</button>`).join("") || `<span class="s" style="color:var(--muted);font-size:13px">No other team members yet.</span>`}</div></div>
+    </div></div>
+    <div class="sect-title"><h2>Services</h2><span class="pill">${nj.services.length} checklist${nj.services.length === 1 ? "" : "s"}</span></div>
+    <div class="card" style="padding:12px"><div class="stack">
+      <div class="eyebrow">Packages</div>
+      <div class="chips">${PACKAGES.map(p => `<button class="choice ${p.socs.every(c => nj.services.includes(c)) ? "on" : ""}" data-pkg="${p.socs.join(",")}">${esc(p.name)}<small>${p.socs.map(c => SOC[c].title).join(" + ")}</small></button>`).join("")}</div>
+      <div class="eyebrow" style="margin-top:4px">Individual checklists</div>
+      <div class="chips">${SOC_ORDER.map(c => `<button class="choice ${nj.services.includes(c) ? "on" : ""}" data-svc="${c}">${esc(SOC[c].title)}<small>3XD ${c} · ${listItemsCount(c)} steps</small></button>`).join("")}</div>
+    </div></div>
+    <div class="err" id="n_err"></div>
+   </div></div>
+   <div class="actionbar"><button class="narrow" data-go="home">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
+  wireNav();
+  const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.client = $("#n_client").value; nj.vehicle = $("#n_vehicle").value; nj.leadId = $("#n_lead").value; };
+  $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); renderNewJob(); };
+  app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; renderNewJob(); });
+  app.querySelectorAll("[data-pkg]").forEach(b => b.onclick = () => { readForm(); const socs = b.dataset.pkg.split(","); const on = socs.every(c => nj.services.includes(c)); nj.services = on ? nj.services.filter(c => !socs.includes(c)) : [...new Set([...nj.services, ...socs])]; renderNewJob(); });
+  app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const c = b.dataset.svc; nj.services = nj.services.includes(c) ? nj.services.filter(x => x !== c) : [...nj.services, c]; renderNewJob(); });
+  $("#n_go").onclick = () => {
+    readForm();
+    if (!nj.client.trim() || !nj.vehicle.trim()) { $("#n_err").textContent = "Client and vehicle are required."; return; }
+    if (!nj.services.length) { $("#n_err").textContent = "Pick at least one service."; return; }
+    const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), services:SOC_ORDER.filter(c => nj.services.includes(c)), leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
+    job.services.forEach(c => job.lists[c] = { checks:{}, flags:{}, notes:"" });
+    DB.jobs.push(job); save(); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
+  };
+}
+
+// ---------- job runner ----------
+function renderJob(){
+  const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
+  const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => a.createdAt - b.createdAt);
+  const p = jobProgress(job);
+  app.innerHTML = `
+   <div class="topbar" style="padding-bottom:6px"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(job.vehicle)}</h1><div class="sub">${esc(job.client)} · ${fmtDate(job.date)} · Lead ${esc(userName(job.leadId))}${job.techIds.length ? " · " + job.techIds.map(userName).map(esc).join(", ") : ""}</div></div>
+     <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end"><button class="tbtn" data-go="home">Board</button></div></div></div>
+   ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)} <span class="num" style="opacity:.7">${jobProgress(j).pct}%</span></button>`).join("")}</div>` : ""}
+   <div class="jobhead"><div class="times">
+     <div class="tbox"><button id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to stamp"}</div></button></div>
+     <div class="tbox"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div>
+     <div class="tbox"><div class="k">Progress</div><div class="v num">${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span></div></div>
+   </div></div>
+   <div class="main noscroll">
+     <div class="tabs">${job.services.map((c,i) => { const d = listDone(job,c), t = listItemsCount(c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(SOC[c].title)}</div><div class="p num">${d}/${t}</div><div class="bar"><i style="width:${Math.round(100*d/t)}%"></i></div></button>`; }).join("")}</div>
+     <div class="panes" id="panes">${job.services.map(c => renderPane(job, c)).join("")}</div>
+   </div>
+   <div class="actionbar"><button class="narrow" id="jobnotes">Job notes${job.notes ? " •" : ""}</button><button class="primary" id="finish">${p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`}</button></div>`;
+  wireNav();
+  app.querySelectorAll("[data-switch]").forEach(b => b.onclick = () => go("job", {jobId:b.dataset.switch, pane:0}));
+  const panes = $("#panes");
+  panes.scrollLeft = ui.pane * panes.clientWidth;
+  app.querySelectorAll("[data-pane]").forEach(b => b.onclick = () => { ui.pane = +b.dataset.pane; panes.scrollTo({left: ui.pane * panes.clientWidth, behavior:"smooth"}); syncTabs(); });
+  let st; panes.addEventListener("scroll", () => { clearTimeout(st); st = setTimeout(() => { const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }, 60); });
+  function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
+
+  $("#arrive").onclick = () => {
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); save(); toast("Arrival stamped " + fmtT(job.arrivedAt)); renderJob(); return; }
+    const v = prompt("Arrival time is " + fmtT(job.arrivedAt) + ".\nEnter a corrected time (e.g. 7:05 am) or leave blank to keep it:");
+    if (v == null || !v.trim()) return; const ts = setTimeOfDay(job.arrivedAt, v); if (!ts) { toast("Couldn't read that time"); return; }
+    job.arrivedAt = ts; save(); renderJob();
+  };
+  panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
+  $("#jobnotes").onclick = () => { const v = prompt("Job notes (client requests, issues, where the key went):", job.notes || ""); if (v == null) return; job.notes = v; save(); renderJob(); };
+  $("#finish").onclick = () => finishJob(job);
+  liveTimer = setInterval(() => { const el = app.querySelector('[data-live="total"]'); if (el) el.textContent = fmtD(jobTotal(job)); app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running && s.startAt) e.textContent = fmtD(Date.now() - s.startAt); }); }, 1000);
+}
+function renderPane(job, code){
+  const S = SOC[code]; const st = phaseStats(job, code); const L = job.lists[code];
+  return `<div class="pane" data-code="${code}">
+   ${S.phases.map((ph, pi) => { const s = st[pi];
+     const right = s.complete ? `<div class="d done num">${fmtD(s.duration)}</div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}</div>`
+       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${s.startAt ? fmtD(Date.now() - s.startAt) : "…"}</div><div class="w">in progress · ${s.done}/${s.total}</div>`
+       : `<div class="d live">—</div><div class="w">${esc(ph[2])}</div>`;
+     return `<div class="phase"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b>${(s.complete || s.running) ? `<small>${esc(ph[2])}</small>` : ""}</div><div class="r">${right}</div></div>
+       ${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
+       ${ph[3].map((txt, ii) => { const k = pi+"_"+ii; const ts = L.checks[k]; const fl = L.flags[k];
+         return `<div class="item ${ts ? "done" : ""}" data-chk="${code}:${k}"><div class="box">${ts ? "✓" : ""}</div><div class="txt">${esc(txt)}<div class="meta">${ts ? `<button class="stamp num" data-stamp="${code}:${k}">✓ ${fmtT(ts)}</button>` : ""}<button class="notebtn" data-flag="${code}:${k}">${fl ? "edit note" : "+ note"}</button></div>${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div></div>`; }).join("")}
+     </div>`; }).join("")}
+   ${S.footer ? `<div class="hint">➜ ${esc(S.footer)}</div>` : ""}
+   <div class="listnotes"><label>${esc(S.title)} notes</label><textarea data-lnotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(L.notes)}</textarea></div>
+  </div>`;
+}
+function refreshPane(job, code){
+  const panes = $("#panes"); const old = panes.querySelector(`.pane[data-code="${code}"]`); const top = old.scrollTop;
+  const tmp = document.createElement("div"); tmp.innerHTML = renderPane(job, code); const fresh = tmp.firstElementChild;
+  old.replaceWith(fresh); fresh.scrollTop = top; panes.scrollLeft = ui.pane * panes.clientWidth;
+  const p = jobProgress(job);
+  app.querySelectorAll("[data-pane]").forEach(b => { const c = job.services[+b.dataset.pane]; const d = listDone(job,c), t = listItemsCount(c); b.querySelector(".p").textContent = `${d}/${t}`; b.querySelector(".bar i").style.width = Math.round(100*d/t) + "%"; });
+  const prog = app.querySelector(".jobhead .tbox:last-child .v"); if (prog) prog.innerHTML = `${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span>`;
+  $("#finish").textContent = p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`;
+  const arr = $("#arrive .v"); if (arr && job.arrivedAt) { arr.textContent = fmtT(job.arrivedAt); arr.classList.remove("red"); }
+  wirePane(job, fresh);
+}
+function wirePane(job, pane){
+  pane.querySelectorAll("[data-chk]").forEach(el => el.onclick = e => {
+    if (e.target.closest("[data-stamp],[data-flag]")) return;
+    const [code, k] = el.dataset.chk.split(":"); const L = job.lists[code];
+    if (L.checks[k]) { if (!confirm("Uncheck this step? Its timestamp will be cleared.")) return; delete L.checks[k]; }
+    else { if (!job.arrivedAt) { job.arrivedAt = Date.now(); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); } L.checks[k] = Date.now(); }
+    save(); refreshPane(job, code);
+  });
+  pane.querySelectorAll("[data-stamp]").forEach(el => el.onclick = () => {
+    const [code, k] = el.dataset.stamp.split(":"); const L = job.lists[code];
+    const v = prompt("Checked at " + fmtT(L.checks[k]) + ".\nEnter the real completion time (e.g. 7:20 am) or leave blank:");
+    if (v == null || !v.trim()) return; const ts = setTimeOfDay(L.checks[k], v); if (!ts) { toast("Couldn't read that time"); return; }
+    L.checks[k] = ts; save(); refreshPane(job, code);
+  });
+  pane.querySelectorAll("[data-flag]").forEach(el => el.onclick = () => {
+    const [code, k] = el.dataset.flag.split(":"); const L = job.lists[code];
+    const v = prompt("Note on this step (issue found, redo, upcharge, etc.). Leave blank to remove:", L.flags[k] || "");
+    if (v == null) return; if (v.trim()) L.flags[k] = v.trim(); else delete L.flags[k]; save(); refreshPane(job, code);
+  });
+  pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); });
+}
+function finishJob(job){
+  const p = jobProgress(job);
+  if (p.d < p.t) {
+    const v = prompt(`${p.t - p.d} step(s) are not checked off. Every step should be done before signing off.\n\nTo finish anyway, write why (this goes on the report):`);
+    if (v == null || !v.trim()) return; job.finishNote = v.trim();
+  }
+  if (!job.arrivedAt) job.arrivedAt = job.createdAt;
+  job.finishedAt = Date.now(); job.status = "done"; save(); toast("Signed off · " + fmtD(jobTotal(job)));
+  go("report", {jobId: job.id});
+}
+
+// ---------- report ----------
+function renderReport(){
+  const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
+  const rows = job.services.map(code => {
+    const S = SOC[code]; const st = phaseStats(job, code); const done = listDone(job, code), tot = listItemsCount(code);
+    const first = job.arrivedAt || listFirstCheck(job, code), last = listLastCheck(job, code);
+    return `<div class="card"><div class="lt"><h3>${esc(S.title)} <span class="eyebrow">3XD ${code}</span></h3><div class="d num">${done}/${tot} · ${first && last ? fmtD(last - first) : "—"}</div></div>
+     <div style="overflow-x:auto"><table><thead><tr><th>Step</th><th class="r">Time</th><th class="r">Took</th></tr></thead><tbody>
+     ${S.phases.map((ph, pi) => { const s = st[pi];
+       return `<tr class="ph"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : `${s.done}/${s.total}`}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>` +
+         ph[3].map((txt, ii) => { const k = pi+"_"+ii; const ts = job.lists[code].checks[k]; const fl = job.lists[code].flags[k];
+           return `<tr class="${ts ? "" : "miss"}"><td>${ts ? "✓" : "✗"} ${esc(txt)}${fl ? `<div class="flag" style="display:inline-block;margin-top:4px">⚑ ${esc(fl)}</div>` : ""}</td><td class="r num">${ts ? fmtT(ts) : "not done"}</td><td></td></tr>`; }).join("");
+     }).join("")}</tbody></table></div>
+     ${job.lists[code].notes ? `<div class="note"><b>Notes:</b> ${esc(job.lists[code].notes)}</div>` : ""}</div>`;
+  }).join("");
+  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off · share it to Sam" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="report stack">
+     <div class="head"><h2>${esc(job.vehicle)}</h2><div class="sub">${esc(job.client)} · ${fmtDate(job.date)}</div>
+       <div class="kv num"><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Services</b><span>${job.services.map(c => esc(SOC[c].title)).join(" + ")}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>Total</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
+       ${job.finishNote ? `<div class="flag" style="margin-top:10px">⚑ Finished with open items: ${esc(job.finishNote)}</div>` : ""}</div>
+     ${rows}
+     ${job.notes ? `<div class="card"><div class="lt"><h3>Job notes</h3></div><div class="note">${esc(job.notes)}</div></div>` : ""}
+     ${job.status === "active" ? `<button class="btn ghost" id="backtojob">Back to checklists</button>` : (isOwner() ? `<button class="btn ghost danger" id="deljob">Delete this job</button>` : "")}
+   </div></div>
+   <div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share report</button></div>`;
+  wireNav();
+  const text = reportText(job);
+  $("#share").onclick = async () => {
+    if (navigator.share) { try { await navigator.share({ title:`3X Job Report — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } }
+    copyText(text);
+  };
+  $("#copy").onclick = () => copyText(text);
+  const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
+  const d = $("#deljob"); if (d) d.onclick = () => { if (confirm("Delete this job and its timing permanently?")) { DB.jobs = DB.jobs.filter(j => j.id !== job.id); save(); go("history"); } };
+}
+async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text to Sam"); } catch(e){ prompt("Copy this report:", t); } }
+
+// ---------- history & stats ----------
+function renderHistory(){
+  const u = me(); const mine = ui.histFilter === "mine";
+  const done = DB.jobs.filter(j => j.status === "done" && (!mine || j.leadId === u.id || j.techIds.includes(u.id))).sort((a,b) => b.finishedAt - a.finishedAt);
+  const totals = done.map(jobTotal).filter(x => x != null);
+  const avg = totals.length ? totals.reduce((a,b) => a+b, 0)/totals.length : null;
+  const bySvc = {}; done.forEach(j => j.services.forEach(c => { const f = j.arrivedAt, l = listLastCheck(j, c); if (f && l) (bySvc[c] = bySvc[c] || []).push(l - f); }));
+  app.innerHTML = topbar("History & stats", `${done.length} finished job${done.length === 1 ? "" : "s"}`, `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="stack">
+     <div class="seg"><button class="${!mine ? "on" : ""}" data-f="all">Whole team</button><button class="${mine ? "on" : ""}" data-f="mine">My jobs</button></div>
+     <div class="statrow"><div class="stat"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></div><div class="stat"><div class="v num">${fmtD(avg)}</div><div class="k">Avg job time</div></div><div class="stat"><div class="v num">${fmtD(totals.length ? Math.min(...totals) : null)}</div><div class="k">Fastest job</div></div></div>
+     ${Object.keys(bySvc).length ? `<div class="card">${SOC_ORDER.filter(c => bySvc[c]).map(c => { const a = bySvc[c]; return `<div class="rowitem"><div><div class="n">${esc(SOC[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"}</div></div><div class="num" style="font-family:'Barlow Condensed';font-weight:700;font-size:20px">${fmtD(a.reduce((x,y) => x+y, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></div>`; }).join("")}</div>` : ""}
+     ${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
+   </div></div>`;
+  wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; renderHistory(); });
+  app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
+}
+
+// ---------- team ----------
+function renderTeam(){
+  if (!isOwner()) return go("home");
+  app.innerHTML = topbar("Team", "Everyone who signs in on the job", `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="stack">
+     <div class="card">${DB.users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${DB.jobs.filter(j => j.status === "done" && (j.leadId === u.id || j.techIds.includes(u.id))).length} jobs</div></div>
+        <div style="display:flex;gap:6px"><button class="btn small ghost" data-pw="${u.id}">Reset PW</button>${u.role !== "owner" ? `<button class="btn small ghost danger" data-rm="${u.id}">Remove</button>` : ""}</div></div>`).join("")}</div>
+     <div class="sect-title"><h2>Add a team member</h2></div>
+     <div class="card" style="padding:14px"><div class="stack">
+       <div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div>
+       <div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="4+ characters"></div></div>
+       <div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button>
+     </div></div>
+     <div class="hint">Accounts live on this phone only. Add the same people on each phone that runs the board.</div>
+   </div></div>`;
+  wireNav();
+  $("#t_add").onclick = async () => {
+    const name = $("#t_name").value.trim(), user = $("#t_user").value.trim().toLowerCase(), pw = $("#t_pw").value, role = $("#t_role").value;
+    if (!name || !user || pw.length < 4) { $("#t_err").textContent = "Name, username and a 4+ character password are required."; return; }
+    if (DB.users.some(u => u.username === user)) { $("#t_err").textContent = "That username is taken."; return; }
+    const salt = uid(); DB.users.push({ id:uid(), name, username:user, role, salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); save(); toast(name + " added"); renderTeam();
+  };
+  app.querySelectorAll("[data-pw]").forEach(b => b.onclick = async () => { const u = DB.users.find(x => x.id === b.dataset.pw); const pw = prompt("New password for " + u.name + ":"); if (!pw || pw.length < 4) return; u.salt = uid(); u.hash = await hashPw(pw, u.salt); save(); toast("Password reset"); });
+  app.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { const u = DB.users.find(x => x.id === b.dataset.rm); if (confirm("Remove " + u.name + "? Their past jobs stay on record.")) { DB.users = DB.users.filter(x => x.id !== u.id); save(); renderTeam(); } });
+}
+
+// ---------- settings ----------
+function renderSettings(){
+  const u = me();
+  app.innerHTML = topbar("Settings", `Signed in as ${esc(u.name)}`, `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="stack">
+     <div class="card" style="padding:14px"><div class="stack">
+       <div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div>
+       <button class="btn ghost" id="signout">Sign out</button>
+     </div></div>
+     <div class="sect-title"><h2>Data</h2></div>
+     <div class="card" style="padding:14px"><div class="stack">
+       <div class="s" style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div>
+       <div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>
+       ${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}
+     </div></div>
+     <div class="hint">3X Job Board · checklists rev 09/11/2026 · add to Home Screen for full-screen use</div>
+   </div></div>`;
+  wireNav();
+  app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
+  $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
+  $("#export").onclick = async () => { const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
+  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (d.v !== 1 || !Array.isArray(d.jobs)) throw 0; d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
+  const w = $("#wipe"); if (w) w.onclick = () => { if (confirm("Erase all accounts, jobs and timing on this phone?") && confirm("Really erase? This cannot be undone.")) { localStorage.removeItem(KEY); location.reload(); } };
+}
+
+// ---------- storage health: warn when this browser won't keep data ----------
+function storageWarning(){
+  let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
+  let ok = true; try { localStorage.setItem("__3x_probe", "1"); ok = localStorage.getItem("__3x_probe") === "1"; localStorage.removeItem("__3x_probe"); } catch(e){ ok = false; }
+  if (ok && !framed) return "";
+  const why = !ok ? "This browser is blocking storage, so nothing you enter here will be kept."
+                  : "This page is running inside another site's frame (a preview). On iPhone that storage is wiped when you leave, so accounts and jobs won't survive.";
+  return `<div style="background:var(--warn-bg);color:var(--warn);padding:10px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--line)">⚠ ${why} Open the app at its own web address and add it to your Home Screen.</div>`;
+}
+const _render = render;
+render = function(){ _render(); const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w); };
+
+// ---------- boot ----------
+applyTheme();
+if (me()) ui.screen = "home";
+render();
+</script>
+</body>
+</html>
