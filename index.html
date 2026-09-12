@@ -505,7 +505,7 @@ const OVER = 1.5; // "ran long" = more than 1.5× the phase target
 const firebaseConfig = { apiKey:"AIzaSyA-9FC-rx1KfWckYMWYowcadJIfSVKLC5s", authDomain:"x-jobboard.firebaseapp.com", projectId:"x-jobboard", storageBucket:"x-jobboard.firebasestorage.app", messagingSenderId:"867291009444", appId:"1:867291009444:web:9074d85e597964d08ab131" };
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
-let fdb; try { fdb = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); } catch(e){ fdb = initializeFirestore(fbApp, {}); }
+let fdb; try { fdb = initializeFirestore(fbApp, { experimentalAutoDetectLongPolling: true, localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); } catch(e){ fdb = initializeFirestore(fbApp, { experimentalAutoDetectLongPolling: true }); }
 const AUTH_DOMAIN = "crew.3xdetailing.com"; // usernames map to synthetic sign-in emails; nothing is ever mailed
 const authEmailFor = (username, n) => `${username}${n > 1 ? "." + n : ""}@${AUTH_DOMAIN}`;
 
@@ -690,7 +690,8 @@ function topbar(title, sub, right){ return `<div class="topbar"><div class="row"
 function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 
 // ---------- first-run setup + login (Firebase) ----------
-function renderSplash(){ app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Connecting…</div></div></div>`; }
+let splashT = null;
+function renderSplash(msg){ clearTimeout(splashT); app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag" id="splash_msg">${esc(msg || "Connecting…")}</div><div class="hint" id="splash_hint" style="visibility:hidden">Still working — the first load on a phone needs signal. Hang tight.</div></div></div>`; splashT = setTimeout(() => { const h = $("#splash_hint"); if (h) h.style.visibility = "visible"; }, 6000); }
 function renderWaiting(){ app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Loading your profile…</div><button class="btn ghost" id="w_out">Sign out</button></div></div>`; $("#w_out").onclick = () => fbSignOut(auth); }
 const authErr = e => ({ "auth/invalid-credential":"Wrong username or password.", "auth/invalid-login-credentials":"Wrong username or password.", "auth/wrong-password":"Wrong username or password.", "auth/user-not-found":"Wrong username or password.", "auth/network-request-failed":"No connection. Sign-in needs signal the first time.", "auth/email-already-in-use":"That username is already taken.", "auth/weak-password":"Password needs 6+ characters.", "auth/too-many-requests":"Too many tries — wait a minute." }[e.code] || (e.message || String(e)));
 const cleanUser = u => u.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
@@ -716,9 +717,19 @@ function renderLogin(){
     <div class="card stack"><div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div><div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div><div class="err" id="l_err"></div><button class="btn primary" id="l_go">Sign in</button></div><div class="hint">Accounts are created by the owner in Team. Same username and password on every phone.</div></div></div>`;
   const tryLogin = async () => {
     const user = cleanUser($("#l_user").value), pw = $("#l_pw").value; const b = $("#l_go"); if (!user || !pw) return;
-    b.disabled = true; $("#l_err").textContent = "";
-    try { const snap = await getDoc(doc(fdb, "usernames", user)); if (!snap.exists()) throw { code:"auth/user-not-found" }; await signInWithEmailAndPassword(auth, snap.data().authEmail, pw); }
-    catch(e){ $("#l_err").textContent = authErr(e); b.disabled = false; }
+    b.disabled = true; b.textContent = "Signing in…"; $("#l_err").textContent = "";
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ code:"timeout" }), ms))]);
+    try {
+      try { await signInWithEmailAndPassword(auth, authEmailFor(user, 1), pw); } // most accounts: no database lookup needed
+      catch(e1) {
+        if (!/invalid-credential|invalid-login-credentials|user-not-found|wrong-password/.test(e1.code || "")) throw e1;
+        let email = null; try { const snap = await withTimeout(getDoc(doc(fdb, "usernames", user)), 10000); if (snap.exists()) email = snap.data().authEmail; } catch(e2){ if (e2.code === "timeout") throw { code:"auth/network-request-failed" }; }
+        if (!email || email === authEmailFor(user, 1)) throw e1;
+        await signInWithEmailAndPassword(auth, email, pw);
+      }
+      renderSplash("Signed in · loading your board…");
+    }
+    catch(e){ $("#l_err").textContent = authErr(e); b.disabled = false; b.textContent = "Sign in"; }
   };
   $("#l_go").onclick = tryLogin; $("#l_pw").onkeydown = e => { if (e.key === "Enter") tryLogin(); }; setTimeout(() => $("#l_user").focus(), 50);
 }
@@ -738,9 +749,9 @@ function renderHome(){
   app.innerHTML = topbar("Job board", new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}), `<span class="who"><i>${esc(ini)}</i>${esc(u.name.split(" ")[0])}</span><button class="tbtn" data-go="settings">⚙</button>`) +
     `<div class="main"><div class="stack">
       <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
-      ${active.length ? active.map(jobCard).join("") : `<div class="card empty">No cars on the board. Start a job when you pull up.</div>`}
+      ${active.length ? active.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "No cars on the board. Start a job when you pull up." : "Loading jobs…"}</div>`}
       <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><button class="btn small ghost" data-go="history">History & stats</button></div>
-      ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">Finished jobs show up here with their timing.</div>`}
+      ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "Finished jobs show up here with their timing." : "Loading…"}</div>`}
       ${isOwner() ? `<button class="btn ghost" data-go="team">Manage team</button>` : ""}
     </div></div><div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
   wireNav(); app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
@@ -1016,7 +1027,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div><div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v5 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v5.1 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
@@ -1053,7 +1064,7 @@ function subscribe(){
 }
 function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); unsubUsers = unsubJobs = null; DB.users = []; DB.jobs = []; DB.usersReady = DB.jobsReady = false; }
 function checkReady(){
-  if (!(DB.usersReady && DB.jobsReady)) return;
+  if (!DB.usersReady) return;
   if (!DB.ready) { DB.ready = true; ui.screen = me() ? "home" : ui.screen; render(); }
   else onRemote();
   if (me() && isOwner() && localLegacy() && !DB.offeredLegacy) { DB.offeredLegacy = true; setTimeout(offerLegacyUpload, 800); }
@@ -1063,7 +1074,7 @@ function checkReady(){
 applyTheme(); renderSplash();
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 onAuthStateChanged(auth, async user => {
-  if (user) { DB.session = { userId:user.uid }; DB.ready = false; unsubscribe(); subscribe(); }
+  if (user) { DB.session = { userId:user.uid }; DB.ready = false; renderSplash("Loading your board…"); unsubscribe(); subscribe(); }
   else { unsubscribe(); DB.session = null; ui.screen = "login"; try { const s = await getDoc(doc(fdb, "meta", "setup")); DB.setupDone = s.exists(); } catch(e){ DB.setupDone = true; } DB.ready = true; render(); }
 });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(() => {});
