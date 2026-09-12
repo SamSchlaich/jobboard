@@ -546,6 +546,24 @@ function listPauses(job, code){ // gaps between runs, with the reason given when
   r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); });
   return out;
 }
+// --- shared setup: Unload & Setup happens once per stop, so one mark applies to every arrived car on the board ---
+const SHARED_PHASE = "UNLOAD & SETUP";
+const hasSharedSetup = code => LISTS[code].phases[0] && LISTS[code].phases[0][1] === SHARED_PHASE;
+function markSetupEverywhere(ts, date){ // same-day cars on the board; returns number of extra checklists marked
+  let n = 0;
+  DB.jobs.filter(j => j.status === "active" && j.arrivedAt && j.date === date).forEach(j => jobLists(j).forEach(c => {
+    if (hasSharedSetup(c) && !j.lists[c].phases[0]) { j.lists[c].phases[0] = Math.max(ts, j.arrivedAt); n++; }
+  }));
+  return n;
+}
+function adoptSetup(job){ // a car arrived after setup was already done today → its setup phase is already complete
+  const others = DB.jobs.filter(j => j.status === "active" && j.id !== job.id && j.arrivedAt && j.date === job.date);
+  const stamps = others.flatMap(j => jobLists(j).filter(hasSharedSetup).map(c => j.lists[c].phases[0]).filter(Boolean));
+  if (!stamps.length) return 0;
+  const ts = Math.max(...stamps); if (Date.now() - ts > 6*3600*1000) return 0; // stale (different stop)
+  let n = 0; jobLists(job).forEach(c => { if (hasSharedSetup(c) && !job.lists[c].phases[0]) { job.lists[c].phases[0] = Math.max(ts, job.arrivedAt); n++; } });
+  return n;
+}
 function pausesInPhase(pauses, st, pi){ // a pause belongs to the phase that was open when it started; pi = -1 → after every phase was done
   const owner = p => { for (let i = 0; i < st.length; i++) { const s = st[i]; const from = s.startAt, to = s.endAt; if (from == null) return -1; if (p.from >= from && (to == null || p.from < to)) return i; } return -1; };
   return pauses.filter(p => owner(p) === pi);
@@ -779,7 +797,7 @@ function renderJob(){
   let raf = 0; panes.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }); });
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
   $("#arrive").onclick = () => {
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); save(); toast("Arrival stamped " + fmtT(job.arrivedAt) + " · all checklists running"); renderJob(); return; }
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); save(); toast("Arrival stamped " + fmtT(job.arrivedAt) + (n ? " · Unload & Setup already done — marked" : " · all checklists running")); renderJob(); return; }
     const v = prompt("Arrival time is " + fmtT(job.arrivedAt) + ".\nEnter a corrected time (e.g. 7:05 am) or leave blank to keep it:");
     if (v == null || !v.trim()) return; const ts = setTimeOfDay(job.arrivedAt, v); if (!ts) { toast("Couldn't read that time"); return; }
     const old = job.arrivedAt; job.arrivedAt = ts;
@@ -810,7 +828,7 @@ function renderPane(job, code){
      const right = s.complete ? `<div class="d done num">${fmtD(s.duration)}</div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}</div>`
        : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${fmtD(s.elapsed)}</div><div class="w">${pz ? "paused" : "in progress"}</div>`
        : `<div class="d idle">—</div><div class="w">${cur ? "waiting on arrival" : "up next"}</div>`;
-     return `<div class="phase ${s.complete ? "done" : ""} ${cur ? "current" : ""}"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${esc(ph[2])}</small></div><div class="r">${right}</div></div>
+     return `<div class="phase ${s.complete ? "done" : ""} ${cur ? "current" : ""}"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${esc(ph[2])}${pi === 0 && hasSharedSetup(code) ? " · shared: one mark covers every car on the board" : ""}</small></div><div class="r">${right}</div></div>
        ${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
        <div class="steps">${ph[3].map((txt, ii) => { const k = pi+"_"+ii; const fl = L.flags[k];
          return `<div class="step"><div class="dot"></div><div class="txt">${esc(txt)}${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div><button class="nb ${fl ? "has" : ""}" data-flag="${code}:${k}">${fl ? "edit" : "note"}</button></div>`; }).join("")}</div>
@@ -843,8 +861,10 @@ function wirePane(job, pane){
       L.phases[pi] = ts; save(); refreshPane(job, code); return;
     }
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); }
-    L.phases[pi] = Date.now(); save(); refreshPane(job, code);
-    const next = pane.querySelector(`.phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
+    const ts = Date.now(); L.phases[pi] = ts;
+    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job.date); if (n) toast(`Unload & Setup marked on ${n} other checklist${n === 1 ? "" : "s"}`); save(); jobLists(job).forEach(c => refreshPane(job, c)); }
+    else { save(); refreshPane(job, code); }
+    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
   });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
   pane.querySelectorAll("[data-resume]").forEach(el => el.onclick = () => { resumeList(job, el.dataset.resume); save(); toast(LISTS[el.dataset.resume].title + " running"); refreshPane(job, el.dataset.resume); });
@@ -1028,7 +1048,7 @@ function renderSettings(){
        <div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>
        ${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}
      </div></div>
-     <div class="hint">3X Job Board v3 · checklists rev 09/11/2026</div>
+     <div class="hint">3X Job Board v3.2 · checklists rev 09/11/2026</div>
    </div></div>`;
   wireNav();
   app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
