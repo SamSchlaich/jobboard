@@ -99,6 +99,16 @@
   .choice small { display:block; font-weight:500; font-size:11.5px; color:var(--muted); }
   .choice.on small { color:#B8B8C0; }
   .hint { color:var(--muted); font-size:12.5px; text-align:center; padding:6px 10px 0; font-style:italic; }
+  .pick { width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; gap:8px; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; color:var(--faint); min-height:46px; }
+  .pick.set { color:var(--text); font-weight:600; }
+  .pick:disabled { opacity:.5; }
+  .pick .chev { color:var(--muted); font-size:13px; }
+  .pickq { width:100%; padding:12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface-2); font-size:17px; min-height:48px; margin-bottom:8px; }
+  .picklist { max-height:52dvh; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+  .pickitem { text-align:left; padding:11px 13px; border:1px solid var(--line); border-radius:10px; background:var(--surface); min-height:48px; }
+  .pickitem b { display:block; font-size:15.5px; }
+  .pickitem small { color:var(--muted); font-size:12px; }
+  .pickitem.new { border-color:var(--red); } .pickitem.new b { color:var(--red); }
   .warnbar { background:var(--warn-bg); color:var(--warn); padding:10px 14px; font-size:13px; font-weight:600; border-bottom:1px solid var(--line); }
 
   /* ---------- sheets (replace browser pop-ups) ---------- */
@@ -497,6 +507,24 @@ const SERVICES = [
 ];
 const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
 const ROLES = { owner:"Owner", lead:"Team Lead", tech:"Technician" };
+// ---------- client list (seeded from the 3X Job Reconciliation sheet, Sep 2026; grows as jobs are created) ----------
+const CLIENT_SEED = [{"name":"Aiden Winteregg","phone":"703-606-2514","vehicles":["Volvo S60"]},{"name":"Alex Corey","phone":"850-339-3056","vehicles":["Jeep Wrangler"]},{"name":"Andy Burwell","phone":"727-442-7513","vehicles":["Land Rover Defender","RV Camper","Thor Motorcoach RV"]},{"name":"Anna Sebban","phone":"727-224-1747","vehicles":["BMW X5 M Competition","Land Rover Range Rover HSE"]},{"name":"Austin Beilhart","phone":"714-348-3795","vehicles":["GMC Yukon Denali","Mercedes-Benz AMG G63"]},{"name":"Beata Somareddy","phone":"516-669-6452","vehicles":["Mercedes-Benz G-Wagon","Ferrari 488 Spider","Porsche 911"]},{"name":"Ben Ezra","phone":"727-235-1322","vehicles":["Ford Raptor"]},{"name":"Ben Travolta","phone":"818-406-6225","vehicles":["Lucid Air Sapphire"]},{"name":"Benjamin Nagengast","phone":"765-617-3871","vehicles":["BMW M3 Competition"]},{"name":"Blaine Heric","phone":"727-423-2901","vehicles":["BMW 435i","Ferrari Roma","BMW X5"]},{"name":"Boud Van Rompay","phone":"727-421-0224","vehicles":["Jeep Compass Trailhawk"]},{"name":"Brandon Silvera","phone":"727-432-1117","vehicles":["Lamborghini Huracan Performante","Tesla Model S Plaid","Ford F250 Lariat","Jeep Grand Wagoneer","Honda Civic Type R"]},{"name":"Brendan Tapia","phone":"","vehicles":["Tesla Model Y"]},{"name":"Camila Suarez","phone":"","vehicles":["Range Rover Velar"]},{"name":"Chris Sjokvist","phone":"","vehicles":["Ferrari F430","Range Rover Autobiography"]},{"name":"Corrie Eileff","phone":"778-222-9098","vehicles":["Chevrolet Suburban","Dodge Challenger Demon","BMW M3 Competition","BMW M4 Competition"]},{"name":"Dan Gans","phone":"202-412-3700","vehicles":["Lincoln Navigator","Lotus Elise"]},{"name":"Dan Murillo","phone":"310-877-1450","vehicles":["Mercedes-Benz GLE"]},{"name":"Dane Fiori","phone":"727-259-4975","vehicles":["1965 Ford Mustang","Ford Bronco","Ford Expedition"]},{"name":"David Larrabure / Tania Perkins","phone":"Tania Perkins 626-425-8439","vehicles":["Land Rover Defender","Porsche Cayenne S","Ford Explorer","GMC Truck (old & destroyed)","Genesis","Hyundai Elantra","Jaguar F-Pace","Jeep Grand Cherokee","Mazda CX-5","Mazda CX-9","Mitsubishi EV","Nissan Sentra","Porsche 911 Targa 4S","Tesla Model 3","Toyota Highlander"]},{"name":"David Melrose","phone":"214-425-4901","vehicles":["Jeep Grand Wagoneer"]},{"name":"David Tapia","phone":"727-422-5833","vehicles":["Porsche Macan","Acura MDX"]},{"name":"Dianna Duggan","phone":"727-403-8089","vehicles":["Ram TRX"]},{"name":"Dorri Goldschmidt","phone":"205-602-1213","vehicles":["Mercedes-Benz SUV"]},{"name":"Dr. Brian Dahmer","phone":"","vehicles":["Tesla Cybertruck Cyberbeast"]},{"name":"Dustin Kassowitz","phone":"818-312-7867","vehicles":["Ford F350 Limited Super Duty","Jeep Grand Cherokee"]},{"name":"Eric Sites","phone":"727-637-2414","vehicles":["Mercedes-Benz GLS 450","Porsche 911","Porsche Cayman GTS"]},{"name":"Erin Hollander","phone":"323-833-3382","vehicles":["Porsche Macan Turbo"]},{"name":"Gabe (last name?)","phone":"","vehicles":["Land Rover Defender","Porsche 911 Targa 4S"]},{"name":"Gaby Suarez","phone":"","vehicles":["Ford F-150","Honda Civic Sport"]},{"name":"Greg Kras","phone":"303-619-4043","vehicles":["Tesla Cybertruck Cyberbeast","Lamborghini Huracan STO","Ferrari 458","Dodge Viper ACR","Ferrari 296 GTB","Ferrari Purosangue","Alfa Romeo Stelvio","Ferrari 296 GTS","Ferrari 458 Spider","Ferrari SF90","Ferrari F430"]},{"name":"Howard Howell","phone":"","vehicles":["Bentley Continental"]},{"name":"Jason Anderson","phone":"903-930-0335","vehicles":["BMW M8 Competition"]},{"name":"Jason Bennick","phone":"646-847-5147","vehicles":["BMW 530i MSport"]},{"name":"Jeanie Arnold","phone":"503-883-3663","vehicles":["Kia Sedona"]},{"name":"Jenna Capozzi","phone":"310-429-6003","vehicles":["Tesla Model Y"]},{"name":"Jenna Rutgerson","phone":"","vehicles":["Audi SQ5","Chevrolet Silverado"]},{"name":"Jennifer Anderson","phone":"727-504-0933","vehicles":["Porsche Macan S","Subaru Forester"]},{"name":"Jesse Reinhart","phone":"818-282-6658","vehicles":["Tesla Model 3"]},{"name":"Jody Hopp","phone":"201-705-4241","vehicles":["Tesla Model Y"]},{"name":"John Travolta / Austin Imbursia","phone":"","vehicles":["1970 Mercedes-Benz 280 SL Pagoda"]},{"name":"Juan Yanuzzi","phone":"727-266-7358","vehicles":["Ford Shelby GT350"]},{"name":"Kathy Feshback","phone":"727-946-1514","vehicles":["Tesla Model 3"]},{"name":"Lars Letenoff","phone":"727-687-1239","vehicles":["Aston Martin Vantage","Porsche GT4 RS","Lamborghini Huracan Sterrato","Ferrari 296 GTB","Aston Martin V12 Vantage","1983 Ferrari 308 GTB QV","Aston Martin Valhalla","Lamborghini Countach 25th Anniversary","Toyota Tacoma","Ferrari Purosangue"]},{"name":"Laura Heric","phone":"727-423-1062","vehicles":["BMW X5"]},{"name":"Lori Fudens","phone":"727-423-2018","vehicles":["Tesla Model 3"]},{"name":"Marcio Castilho","phone":"727-642-9470","vehicles":["Porsche 911 Carrera GTS","Porsche Cayenne S","Ferrari 296 GTS","Porsche GT4 RS","Porsche 911 GT3 RS","Porsche Cayenne GTS"]},{"name":"Matt Eileff","phone":"604-862-0857","vehicles":["BMW M4 Competition","BMW M3 Competition","Audi S3"]},{"name":"Matt Feshback","phone":"727-743-1510","vehicles":["Tesla Model Y"]},{"name":"Michael Perez","phone":"813-500-9201","vehicles":["Mercedes-Benz EQS 450","Porsche 911"]},{"name":"Randy Hepner","phone":"626-278-2464","vehicles":["Porsche Macan"]},{"name":"Riggs Eckleberry","phone":"310-721-9441","vehicles":["Tesla Model 3","Tesla Model X","Tesla Model Y"]},{"name":"Rosy Kuglar","phone":"727-501-2187","vehicles":["Jaguar F-Pace"]},{"name":"Sherry Kurdziel","phone":"813-220-8221","vehicles":["Ford Bronco Sport","Tesla Model 3","Tesla Model Y"]},{"name":"Sigrid Eckleberry","phone":"310-251-8510","vehicles":["Tesla Model X"]},{"name":"Sue Peters","phone":"989-492-4284","vehicles":["Chevrolet Camaro"]},{"name":"Todd Kuglar","phone":"727-510-0677","vehicles":["Land Rover Defender"]},{"name":"Tommy (last name?)","phone":"","vehicles":["2027 Kia Telluride","McLaren 720S","Mercedes-Benz S500"]}];
+const slug = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "x";
+function clientVehicles(name){ // vehicles on file + anything typed on a past job for this client
+  const c = DB.clients.find(x => sameClient(x.name, name)); const vs = c ? [...c.vehicles] : [];
+  DB.jobs.filter(j => sameClient(j.client, name)).sort((a,b) => b.createdAt - a.createdAt).forEach(j => { if (j.vehicle && !vs.some(v => v.toLowerCase() === j.vehicle.toLowerCase())) vs.push(j.vehicle); });
+  return vs;
+}
+function learnClient(name, vehicle){ // called when a car goes on the board: keeps the list current
+  const c = DB.clients.find(x => x.name.toLowerCase() === name.toLowerCase()) || DB.clients.find(x => sameClient(x.name, name) && x.name.split(" ").length > 1 && name.split(" ").length > 1);
+  if (c) { if (vehicle && !c.vehicles.some(v => v.toLowerCase() === vehicle.toLowerCase())) { c.vehicles = [...c.vehicles, vehicle]; updateDoc(doc(fdb, "clients", c.id), { vehicles:c.vehicles, lastVisit:todayISO() }).catch(() => {}); } else updateDoc(doc(fdb, "clients", c.id), { lastVisit:todayISO() }).catch(() => {}); return; }
+  const id = slug(name); const nc = { id, name, phone:"", vehicles: vehicle ? [vehicle] : [], lastVisit:todayISO(), source:"app" }; DB.clients.push(nc); setDoc(doc(fdb, "clients", id), nc).catch(() => {});
+}
+async function seedClients(force){ // owner only: load the master list into the shared database (adds what's missing, never removes)
+  let n = 0; const batch = writeBatch(fdb);
+  CLIENT_SEED.forEach(c => { const ex = DB.clients.find(x => x.name.toLowerCase() === c.name.toLowerCase()); if (ex) { const add = c.vehicles.filter(v => !ex.vehicles.some(w => w.toLowerCase() === v.toLowerCase())); if (add.length || (c.phone && !ex.phone)) { batch.update(doc(fdb, "clients", ex.id), { vehicles:[...ex.vehicles, ...add], ...(c.phone && !ex.phone ? { phone:c.phone } : {}) }); n++; } } else { const id = slug(c.name); batch.set(doc(fdb, "clients", id), { id, name:c.name, phone:c.phone || "", vehicles:c.vehicles, source:"seed" }); n++; } });
+  if (n) await batch.commit(); return n;
+}
 const listsForServices = ids => LIST_ORDER.filter(c => ids.some(id => (SVC[id] || {lists:[]}).lists.includes(c)));
 function targetMin(sub){ const m = /(\d+)\s*[–-]\s*(\d+)\s*min|(\d+)\s*min/.exec(String(sub || "")); if (!m) return null; return m[2] ? +m[2] : +m[3]; }
 const OVER = 1.5; // "ran long" = more than 1.5× the phase target
@@ -511,7 +539,7 @@ const authEmailFor = (username, n) => `${username}${n > 1 ? "." + n : ""}@${AUTH
 
 // ---------- local state (settings on this phone; users + jobs mirror the shared database) ----------
 const SKEY = "3x_jobboard_settings"; const OLDKEY = "3x_jobboard_v1";
-let DB = { users:[], jobs:[], theme:"auto", nudged:0, session:null, ready:false, setupDone:null };
+let DB = { users:[], jobs:[], clients:[], theme:"auto", nudged:0, session:null, ready:false, setupDone:null };
 try { const st = JSON.parse(localStorage.getItem(SKEY) || "null"); if (st) { DB.theme = st.theme || "auto"; DB.nudged = st.nudged || 0; } } catch(e){}
 function save(){ try { localStorage.setItem(SKEY, JSON.stringify({ theme:DB.theme, nudged:DB.nudged })); } catch(e){} }
 const jobTimers = {};
@@ -669,6 +697,21 @@ function confirmSheet(o){ // {title, text, ok, danger, onOk}
   $("#sh_ok").onclick = () => { s.close(); o.onOk(); };
 }
 
+function pickerSheet(o){ // {title, items:[{label, sub}], placeholder, newLabel, onPick(label)}
+  const s = openSheet(o.title, `<div class="notegroup" style="padding-top:10px"><input class="pickq" id="pk_q" placeholder="${esc(o.placeholder || "Search…")}" autocomplete="off" autocapitalize="words"><div class="picklist" id="pk_list"></div></div>`);
+  const q = $("#pk_q"), list = $("#pk_list");
+  const draw = () => {
+    const t = q.value.trim().toLowerCase(); const words = t.split(/\s+/).filter(Boolean);
+    const hits = o.items.filter(it => !t || words.every(w => it.label.toLowerCase().split(/[^a-z0-9]+/).some(p => p.startsWith(w)) || it.label.toLowerCase().startsWith(t)));
+    const exact = o.items.some(it => it.label.toLowerCase() === t);
+    list.innerHTML = (hits.map(it => `<button class="pickitem" data-v="${esc(it.label)}"><b>${esc(it.label)}</b>${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</button>`).join("") || (!t ? `<div class="hint">Nothing on file yet. Start typing to add one.</div>` : "")) +
+      (t.length >= 2 && !exact ? `<button class="pickitem new" data-v="${esc(q.value.trim())}"><b>＋ Add “${esc(q.value.trim())}”</b><small>${esc(o.newLabel || "new entry")}</small></button>` : "");
+    list.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { s.close(); o.onPick(b.dataset.v); });
+  };
+  q.oninput = draw; q.onkeydown = e => { if (e.key === "Enter") { const first = list.querySelector(".pickitem:not(.new)") || list.querySelector("[data-v]"); if (first) first.click(); } };
+  draw(); setTimeout(() => q.focus(), 120);
+}
+
 // ---------- storage health ----------
 function storageWarning(){
   let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
@@ -763,13 +806,11 @@ function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) retu
 function renderNewJob(){
   const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", serviceIds:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
   const people = DB.users; const lists = listsForServices(nj.serviceIds); const groups = [...new Set(SERVICES.map(s => s.group))];
-  const pastClients = [...new Set(DB.jobs.map(j => j.client.trim()).filter(Boolean))].sort();
-  const vehiclesFor = client => [...new Set(DB.jobs.filter(j => !client.trim() || sameClient(j.client, client)).map(j => j.vehicle.trim()).filter(Boolean))].sort();
   app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" data-go="home">Cancel</button>`) +
    `<div class="main"><div class="stack">
     <div class="card" style="padding:14px"><div class="stack">
-      <div class="field"><label>Client name</label><input id="n_client" list="dl_clients" placeholder="Lars Letenoff" value="${esc(nj.client)}" autocomplete="off"><datalist id="dl_clients">${pastClients.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div>
-      <div class="field"><label>Vehicle</label><input id="n_vehicle" list="dl_vehicles" placeholder="Ferrari 296 GTB" value="${esc(nj.vehicle)}" autocomplete="off"><datalist id="dl_vehicles">${vehiclesFor(nj.client).map(v => `<option value="${esc(v)}">`).join("")}</datalist></div>
+      <div class="field"><label>Client</label><button class="pick ${nj.client ? "set" : ""}" id="n_client">${nj.client ? esc(nj.client) : "Choose client"}<span class="chev">▾</span></button></div>
+      <div class="field"><label>Vehicle</label><button class="pick ${nj.vehicle ? "set" : ""}" id="n_vehicle" ${nj.client ? "" : "disabled"}>${nj.vehicle ? esc(nj.vehicle) : (nj.client ? "Choose vehicle" : "Pick the client first")}<span class="chev">▾</span></button></div>
       <div class="field"><label>Date</label><input id="n_date" type="date" value="${nj.date}"></div>
       <div class="field"><label>Team lead</label><select id="n_lead">${people.map(p => `<option value="${p.id}" ${p.id === nj.leadId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
       <div class="field"><label>Technicians on this car</label><div class="chips">${people.filter(p => p.id !== nj.leadId).map(p => `<button class="choice ${nj.techIds.includes(p.id) ? "on" : ""}" data-tech="${p.id}">${esc(p.name)}</button>`).join("") || `<span style="color:var(--muted);font-size:13px">No other team members yet.</span>`}</div></div>
@@ -779,8 +820,9 @@ function renderNewJob(){
     <div class="err" id="n_err"></div></div></div>
    <div class="actionbar"><button class="narrow" data-go="home">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
   wireNav();
-  const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.client = $("#n_client").value; nj.vehicle = $("#n_vehicle").value; nj.leadId = $("#n_lead").value; };
-  $("#n_client").oninput = () => { readForm(); $("#dl_vehicles").innerHTML = vehiclesFor(nj.client).map(v => `<option value="${esc(v)}">`).join(""); };
+  const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.leadId = $("#n_lead").value; };
+  $("#n_client").onclick = () => { readForm(); pickerSheet({ title:"Client", items:DB.clients.map(c => ({ label:c.name, sub:c.vehicles.length ? `${c.vehicles.length} vehicle${c.vehicles.length === 1 ? "" : "s"} on file` : "" })), placeholder:"Type a name…", newLabel:"new client", onPick: v => { if (v !== nj.client) nj.vehicle = ""; nj.client = v; renderNewJob(); } }); };
+  $("#n_vehicle").onclick = () => { readForm(); if (!nj.client) return; pickerSheet({ title:`${esc(nj.client)} · vehicle`, items:clientVehicles(nj.client).map(v => ({ label:v })), placeholder:"Type a make and model…", newLabel:"new vehicle", onPick: v => { nj.vehicle = v; renderNewJob(); } }); };
   $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); renderNewJob(); };
   app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; renderNewJob(); });
   app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.svc; nj.serviceIds = nj.serviceIds.includes(id) ? nj.serviceIds.filter(x => x !== id) : [...nj.serviceIds, id]; renderNewJob(); });
@@ -790,7 +832,7 @@ function renderNewJob(){
     if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
     const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
     listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"", runs:[] });
-    DB.jobs.push(job); saveJob(job); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
+    learnClient(job.client, job.vehicle); DB.jobs.push(job); saveJob(job); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
 function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob"); }
@@ -1026,12 +1068,13 @@ function renderSettings(){
    `<div class="main"><div class="stack">
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
-     <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div><div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v5.1 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
+     <div class="hint">3X Job Board v5.2 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
   const im = $("#import"); if (im) im.onclick = offerLegacyUpload;
+  const rs = $("#reseed"); if (rs) rs.onclick = async () => { rs.disabled = true; try { const n = await seedClients(); toast(n ? `Client list updated · ${n} change${n === 1 ? "" : "s"}` : "Client list already up to date"); } catch(e){ toast("Failed: " + (e.code || e.message)); } rs.disabled = false; };
 }
 
 // ---------- legacy upload (jobs stored on this phone before sync existed) ----------
@@ -1049,7 +1092,7 @@ function offerLegacyUpload(){
 }
 
 // ---------- live sync ----------
-let unsubUsers = null, unsubJobs = null, pendingRemote = false;
+let unsubUsers = null, unsubJobs = null, unsubClients = null, pendingRemote = false;
 function onRemote(){
   const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if ($("#sheet") || typing) { pendingRemote = true; return; }
@@ -1061,8 +1104,9 @@ document.addEventListener("focusout", () => { if (pendingRemote) setTimeout(() =
 function subscribe(){
   unsubUsers = onSnapshot(collection(fdb, "users"), snap => { DB.users = snap.docs.map(d => ({ id:d.id, ...d.data() })); DB.usersReady = true; checkReady(); }, e => toast("Team sync error: " + e.code));
   unsubJobs = onSnapshot(query(collection(fdb, "jobs"), orderBy("createdAt")), snap => { DB.jobs = snap.docs.map(d => d.data()); DB.jobsReady = true; checkReady(); }, e => toast("Job sync error: " + e.code));
+  unsubClients = onSnapshot(collection(fdb, "clients"), snap => { DB.clients = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name)); DB.clientsReady = true; if (!snap.metadata.fromCache && !DB.clients.length && isOwner() && !DB.seeding) { DB.seeding = true; seedClients().then(n => { if (n) toast(`Client list loaded · ${n} clients`); }).catch(e => toast("Client list: " + (e.code || e.message))); } if (ui.screen === "newjob" && !$("#sheet")) renderNewJob(); }, e => toast("Client sync error: " + e.code));
 }
-function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); unsubUsers = unsubJobs = null; DB.users = []; DB.jobs = []; DB.usersReady = DB.jobsReady = false; }
+function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); if (unsubClients) unsubClients(); unsubUsers = unsubJobs = unsubClients = null; DB.users = []; DB.jobs = []; DB.clients = []; DB.usersReady = DB.jobsReady = DB.clientsReady = false; }
 function checkReady(){
   if (!DB.usersReady) return;
   if (!DB.ready) { DB.ready = true; ui.screen = me() ? "home" : ui.screen; render(); }
@@ -1078,7 +1122,7 @@ onAuthStateChanged(auth, async user => {
   else { unsubscribe(); DB.session = null; ui.screen = "login"; try { const s = await getDoc(doc(fdb, "meta", "setup")); DB.setupDone = s.exists(); } catch(e){ DB.setupDone = true; } DB.ready = true; render(); }
 });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(() => {});
-window.__db = () => DB;
+window.__db = () => DB; window.__app = { go, render, ui, DB };
 </script>
 </body>
 </html>

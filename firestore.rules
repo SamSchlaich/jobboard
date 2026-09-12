@@ -27,8 +27,11 @@ service cloud.firestore {
       allow update: if isOwner();
       allow delete: if false;
     }
-    // jobs: every active team member reads and writes
+    // jobs + client list: every active team member reads and writes
     match /jobs/{jobId} {
+      allow read, write: if isActive();
+    }
+    match /clients/{clientId} {
       allow read, write: if isActive();
     }
   }
