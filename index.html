@@ -850,7 +850,7 @@ function phaseNoteSheet(job, code, pi){
     ${ph[3].map((txt, ii) => `<button data-k="${pi}_${ii}">${esc(txt)}${L.flags[pi+"_"+ii] ? `<small>⚑ ${esc(L.flags[pi+"_"+ii])}</small>` : ""}</button>`).join("")}</div></div>`);
   s.el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const k = b.dataset.k; s.close(); textSheet({ title:"Note", label: k.endsWith("_g") ? `<em>${esc(ph[0])}</em> · general` : "Step", value:L.flags[k] || "", placeholder:"Anything worth remembering — a reminder, an issue, a client request…", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; save(); refreshPane(job, code); } }); });
 }
-const PAUSE_REASONS = ["Both of us on the other checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
+const PAUSE_REASONS = ["Working on another checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
 function openPause(job, code){
   const s = openSheet(`Pause · ${esc(LISTS[code].title)}`, `<div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div><div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div>`);
   s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); save(); toast(LISTS[code].title + " paused"); refreshPane(job, code); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
@@ -974,7 +974,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div><div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}</div></div>
-     <div class="hint">3X Job Board v4 · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v4.1 · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
   $("#export").onclick = exportBackup;
