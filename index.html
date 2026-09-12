@@ -16,6 +16,7 @@
     --good:#1B7A3A; --good-bg:#E6F4EA; --warn:#B45309; --warn-bg:#FEF3E2; --bad:#B91C1C;
     --band:#0A0A0A; --band-text:#FAFAFA; --band-sub:#B8B8C0; --band-done:#123D22;
     --chip:#ECECF0; --shadow:0 1px 2px rgba(10,10,10,.06), 0 4px 14px rgba(10,10,10,.05);
+    --focus:#0A0A0A;
     --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
     color-scheme: light;
   }
@@ -25,7 +26,7 @@
       --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
       --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
       --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --band-done:#0F2E1A; --chip:#2A2A30;
-      --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35); --focus:#FFFFFF;
       color-scheme: dark;
     }
   }
@@ -34,7 +35,7 @@
     --text:#F2F2F4; --muted:#A2A2AC; --faint:#6C6C76;
     --good:#5CC27A; --good-bg:#15301E; --warn:#F2B04C; --warn-bg:#3A2A10; --bad:#F26B6B;
     --band:#000000; --band-text:#FAFAFA; --band-sub:#9C9CA6; --band-done:#0F2E1A; --chip:#2A2A30;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35); --focus:#FFFFFF;
     color-scheme: dark;
   }
 
@@ -42,7 +43,7 @@
   html, body { height:100%; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:'Barlow', -apple-system, 'Segoe UI', Arial, sans-serif; font-size:15px; line-height:1.4; overscroll-behavior-y:none; }
   button, input, select, textarea { font:inherit; color:inherit; }
-  button { cursor:pointer; }
+  button { cursor:pointer; min-height:44px; }
   h1,h2,h3 { margin:0; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; text-wrap:balance; }
   .num { font-variant-numeric: tabular-nums; }
   .eyebrow { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
@@ -52,12 +53,14 @@
   #app { display:flex; flex-direction:column; height:100dvh; }
   #app > * { flex-shrink:0; }
   .topbar { background:var(--ink); color:#FAFAFA; padding:calc(10px + var(--safe-t)) 14px 10px; }
-  .topbar .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:13px; letter-spacing:.16em; }
+  .topbar .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:12px; letter-spacing:.16em; }
   .topbar .brand b { color:var(--red); }
   .topbar .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .topbar h1 { font-size:22px; font-weight:700; letter-spacing:.01em; line-height:1.1; margin-top:2px; }
   .topbar .sub { color:#A9A9B3; font-size:12.5px; margin-top:2px; }
-  .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:7px 11px; font-weight:600; font-size:13px; white-space:nowrap; }
+  .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 11px; font-weight:600; font-size:13px; white-space:nowrap; min-height:36px; }
+  .topbar .who { display:inline-flex; align-items:center; gap:6px; background:#232328; border:1px solid #33333A; border-radius:999px; padding:3px 10px 3px 4px; font-size:12.5px; font-weight:600; color:#D6D6DC; }
+  .topbar .who i { width:22px; height:22px; border-radius:50%; background:var(--red); color:#fff; display:grid; place-items:center; font-style:normal; font-weight:800; font-size:11px; }
   .main { flex:1 1 auto !important; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px calc(96px + var(--safe-b)); }
   .main.noscroll { overflow:hidden; padding:0; display:flex; flex-direction:column; }
   .actionbar { position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line); padding:10px 12px calc(10px + var(--safe-b)); display:flex; gap:10px; z-index:20; }
@@ -70,8 +73,7 @@
   .stack { display:flex; flex-direction:column; gap:12px; }
   .field { display:flex; flex-direction:column; gap:5px; min-width:0; }
   .field label { font-size:12.5px; font-weight:600; color:var(--muted); }
-  .field input, .field select, .field textarea { width:100%; min-width:0; max-width:100%; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; -webkit-appearance:none; appearance:none; }
-  .field input[type="date"] { min-height:46px; display:block; }
+  .field input, .field select, .field textarea { width:100%; min-width:0; max-width:100%; padding:11px 12px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); font-size:16px; -webkit-appearance:none; appearance:none; min-height:46px; }
   .field select { background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position:calc(100% - 18px) 20px, calc(100% - 13px) 20px; background-size:5px 5px; background-repeat:no-repeat; padding-right:32px; }
   .field textarea { min-height:84px; resize:vertical; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -79,7 +81,7 @@
   .btn { padding:12px 14px; border:none; border-radius:10px; font-weight:700; font-size:15px; background:var(--chip); color:var(--text); }
   .btn.primary { background:var(--red); color:#fff; }
   .btn.ghost { background:transparent; border:1px solid var(--line-2); }
-  .btn.small { padding:7px 11px; font-size:13px; border-radius:8px; }
+  .btn.small { padding:8px 12px; font-size:13px; border-radius:8px; min-height:40px; }
   .btn.danger { color:var(--bad); }
   .btn:disabled { opacity:.45; }
   .pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:600; background:var(--chip); color:var(--muted); white-space:nowrap; }
@@ -99,6 +101,29 @@
   .hint { color:var(--muted); font-size:12.5px; text-align:center; padding:6px 10px 0; font-style:italic; }
   .warnbar { background:var(--warn-bg); color:var(--warn); padding:10px 14px; font-size:13px; font-weight:600; border-bottom:1px solid var(--line); }
 
+  /* ---------- sheets (replace browser pop-ups) ---------- */
+  .sheetwrap { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:flex; align-items:flex-end; }
+  .sheet { background:var(--bg); width:100%; max-height:88dvh; border-radius:16px 16px 0 0; display:flex; flex-direction:column; }
+  .sheet .sh { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px 10px; }
+  .sheet .sh h2 { font-size:21px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; }
+  .sheet .sb { overflow-y:auto; padding:0 12px calc(16px + var(--safe-b)); }
+  .notegroup { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; margin-bottom:12px; }
+  .notegroup h3 { font-size:17px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; margin-bottom:8px; }
+  .notegroup h3 em { color:var(--red); font-style:normal; }
+  .noteline { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .noteline:first-of-type { border-top:none; }
+  .noteline .w { flex:0 0 auto; color:var(--muted); font-weight:600; font-size:12px; white-space:nowrap; margin-top:1px; }
+  .noteline .t { flex:1; min-width:0; }
+  .noteline .t small { display:block; color:var(--faint); font-size:11.5px; }
+  .noteline button { border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 10px; min-height:32px; }
+  .notegroup textarea { width:100%; min-height:72px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
+  .reasons { display:flex; flex-direction:column; gap:8px; }
+  .reasons button { text-align:left; padding:12px 14px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); font-weight:600; font-size:15px; }
+  .reasons button small { display:block; font-weight:500; font-size:12px; color:var(--muted); }
+  .sheetbtns { display:flex; gap:8px; margin-top:10px; }
+  .sheetbtns .btn { flex:1; }
+  .timein { width:100%; font-size:28px; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); text-align:center; min-height:56px; }
+
   /* ---------- login ---------- */
   .login { max-width:420px; margin:0 auto; padding-top:8vh; }
   .login .mark { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:44px; letter-spacing:.06em; line-height:1; }
@@ -113,59 +138,67 @@
   .jobcard .jc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .jobcard h3 { font-size:21px; font-weight:700; letter-spacing:.01em; line-height:1.05; }
   .jobcard .jc-client { color:var(--muted); font-size:13.5px; margin-top:2px; }
+  .jobcard .jc-lists { margin-top:8px; display:flex; flex-direction:column; gap:3px; font-size:13.5px; }
+  .jobcard .jc-lists div { display:flex; justify-content:space-between; gap:8px; }
+  .jobcard .jc-lists b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; text-transform:uppercase; font-size:13px; }
+  .jobcard .jc-lists .st { color:var(--muted); }
+  .jobcard .jc-lists .st.paused { color:var(--warn); font-weight:600; }
+  .jobcard .jc-lists .st.done { color:var(--good); font-weight:600; }
   .jobcard .jc-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
   .jobcard .bar { height:5px; background:var(--chip); }
   .jobcard .bar i { display:block; height:100%; background:var(--red); transition:width .25s; }
   .jobcard.done .bar i { background:var(--good); }
   .statrow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .stat { background:var(--surface); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); border:2px solid transparent; text-align:left; }
-  .stat.on { border-color:var(--red); }
+  .stat.on { border-color:var(--focus); }
   .stat .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:26px; line-height:1; }
   .stat .k { font-size:11.5px; color:var(--muted); margin-top:3px; }
 
   /* ---------- job screen ---------- */
-  .carchips { display:flex; gap:8px; overflow-x:auto; padding:4px 14px 10px; scrollbar-width:none; background:var(--ink); }
+  .jobtop { background:var(--ink); color:#FAFAFA; padding:calc(8px + var(--safe-t)) 14px 8px; }
+  .jobtop .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .jobtop .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:12px; letter-spacing:.16em; }
+  .jobtop .brand b { color:var(--red); }
+  .jobtop .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 11px; font-weight:600; font-size:13px; white-space:nowrap; min-height:36px; }
+  .jobtop h1 { font-size:22px; font-weight:700; line-height:1.05; margin-top:4px; }
+  .jobtop .sub { color:#A9A9B3; font-size:12.5px; margin-top:1px; }
+  .carchips { display:flex; gap:8px; overflow-x:auto; padding:6px 0 2px; scrollbar-width:none; }
   .carchips::-webkit-scrollbar { display:none; }
-  .carchip { flex:0 0 auto; border-radius:9px; padding:8px 12px; background:#232328; color:#D6D6DC; border:1px solid #33333A; font-weight:600; font-size:14px; white-space:nowrap; line-height:1.2; }
+  .carchip { flex:0 0 auto; border-radius:9px; padding:7px 12px; background:#232328; color:#D6D6DC; border:1px solid #33333A; font-weight:700; font-size:15px; white-space:nowrap; line-height:1.2; min-height:38px; font-family:'Barlow Condensed',Arial,sans-serif; letter-spacing:.02em; }
   .carchip.on { background:#fff; color:var(--ink); border-color:#fff; }
   .carchip.on i { color:var(--red); font-style:normal; }
-  .jobhead { background:var(--ink); color:#FAFAFA; padding:0 14px 10px; }
-  .jobhead .times { display:flex; gap:8px; }
-  .tbox { flex:1; background:#1A1A1E; border:1px solid #2C2C33; border-radius:9px; padding:7px 10px; min-width:0; }
-  .tbox .k { font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:#8E8E99; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; }
-  .tbox .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:22px; line-height:1.05; margin-top:1px; white-space:nowrap; }
-  .tbox .v.red { color:var(--red); }
-  .tbox button { all:unset; display:block; width:100%; cursor:pointer; }
+  .carchip small { font-family:'Barlow',sans-serif; font-weight:500; font-size:11.5px; opacity:.75; margin-left:4px; }
+  .stats { display:flex; gap:6px; margin-top:8px; }
+  .stats .st { flex:1; background:#1A1A1E; border:1px solid #2C2C33; border-radius:8px; padding:5px 9px; min-width:0; display:flex; flex-direction:column; justify-content:center; min-height:44px; text-align:left; color:#FAFAFA; }
+  .stats .st .k { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#8E8E99; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; line-height:1; }
+  .stats .st .v { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:18px; line-height:1.1; margin-top:2px; white-space:nowrap; }
+  .stats .st .v.red { color:var(--red); }
   .tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--line); }
-  .tab { flex:1; padding:11px 8px 0; border:none; background:none; text-align:center; color:var(--faint); }
-  .tab .t { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; letter-spacing:.03em; text-transform:uppercase; }
-  .tab .p { font-size:11.5px; margin-top:1px; }
-  .tab .ul { height:4px; margin-top:8px; background:transparent; border-radius:2px 2px 0 0; }
+  .tab { flex:1; padding:9px 6px 0; border:none; background:none; text-align:center; color:var(--faint); min-height:0; }
+  .tab .t { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; letter-spacing:.03em; text-transform:uppercase; white-space:nowrap; }
+  .tab .p { font-size:11.5px; margin-top:0; }
+  .tab .p.paused { color:var(--warn); font-weight:700; }
+  .tab .ul { height:4px; margin-top:6px; background:transparent; border-radius:2px 2px 0 0; }
   .tab.on { color:var(--text); }
   .tab.on .ul { background:var(--red); }
   .panes { flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; }
   .panes::-webkit-scrollbar { display:none; }
-  .pane { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px calc(96px + var(--safe-b)); }
-  .panehead { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:2px 4px 10px; }
+  .pane { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px calc(96px + var(--safe-b)); }
+  .panehead { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:2px 4px 6px; }
   .panehead .eyebrow { color:var(--red); margin-bottom:1px; }
-  .panehead h2 { font-size:24px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; line-height:1; }
-  .panehead .c { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; color:var(--muted); white-space:nowrap; text-align:right; }
-  .panehead .c small { display:block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
-  .clock { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 13px; border-radius:12px; margin-bottom:12px; box-shadow:var(--shadow); background:var(--surface); border:2px solid transparent; }
-  .clock .cl b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:17px; letter-spacing:.03em; text-transform:uppercase; display:block; line-height:1; }
-  .clock .cl small { display:block; color:var(--muted); font-size:12.5px; margin-top:3px; }
-  .clock.running { border-color:var(--good); } .clock.running .cl b { color:var(--good); }
-  .clock.paused { border-color:var(--warn); background:var(--warn-bg); } .clock.paused .cl b { color:var(--warn); } .clock.paused .cl small { color:var(--warn); }
-  .clock.idle .cl b { color:var(--faint); }
-  .clock button { flex:0 0 auto; }
-  .tab .p.paused { color:var(--warn); font-weight:700; }
-  .reasons { display:flex; flex-direction:column; gap:8px; }
-  .reasons button { text-align:left; padding:13px 14px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); font-weight:600; font-size:15px; }
-  .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; border:2px solid transparent; }
-  .phase.current { border-color:var(--red); }
-  .band { background:var(--band); color:var(--band-text); padding:9px 13px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .panehead h2 { font-size:22px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; line-height:1; }
+  .panehead .c { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:15px; color:var(--muted); white-space:nowrap; text-align:right; }
+  .clockline { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:4px 4px 10px; font-size:13.5px; font-weight:600; }
+  .clockline .cl b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:14px; margin-right:6px; }
+  .clockline.running .cl b { color:var(--good); }
+  .clockline.paused { color:var(--warn); } .clockline.paused .cl b { color:var(--warn); }
+  .clockline.idle .cl { color:var(--muted); }
+  .clockline .btn.small { min-height:36px; padding:6px 12px; }
+  .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:10px; border:2px solid transparent; }
+  .phase.current { border-color:var(--focus); box-shadow:0 0 0 3px rgba(239,26,45,.12), var(--shadow); }
+  .band { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; width:100%; text-align:left; background:var(--band); color:var(--band-text); padding:9px 13px 8px; border:none; border-radius:0; }
   .phase.done .band { background:var(--band-done); }
-  .band .l { min-width:0; }
+  .band .l { min-width:0; flex:1; }
   .band .l b { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; letter-spacing:.03em; text-transform:uppercase; }
   .band .l b em { color:var(--red); font-style:normal; }
   .phase.done .band .l b em { color:#7BE29A; }
@@ -173,41 +206,28 @@
   .band .r { text-align:right; flex:0 0 auto; }
   .band .r .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:19px; line-height:1; }
   .band .r .d.live { color:#FFD166; }
+  .band .r .d.over { color:#FF8A5B; }
   .band .r .d.done { color:#7BE29A; }
+  .band .r .d.done.over { color:#FFB48A; }
   .band .r .d.idle { color:#6E6E78; }
   .band .r .w { font-size:10.5px; color:var(--band-sub); margin-top:2px; white-space:nowrap; }
+  .band .chev { flex:0 0 auto; color:var(--band-sub); font-size:12px; margin-left:4px; align-self:center; }
   .policy { padding:9px 13px 0; font-size:12.5px; color:var(--muted); font-style:italic; }
   .steps { padding:6px 13px 4px; }
-  .step { display:flex; gap:9px; align-items:flex-start; padding:5px 0; font-size:14px; line-height:1.35; color:var(--text); }
+  .step { display:flex; gap:9px; align-items:flex-start; padding:5px 0; font-size:14.5px; line-height:1.35; color:var(--text); }
   .phase.done .step { color:var(--muted); }
   .step .dot { flex:0 0 6px; height:6px; border-radius:50%; background:var(--line-2); margin-top:8px; }
   .step .txt { flex:1; min-width:0; }
-  .step .nb { flex:0 0 auto; border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 8px; margin-top:1px; }
-  .step .nb.has { background:var(--warn-bg); color:var(--warn); }
   .flag { font-size:12.5px; color:var(--warn); background:var(--warn-bg); border-radius:6px; padding:4px 8px; margin-top:4px; display:inline-block; }
-  .phasebtn { display:block; width:calc(100% - 26px); margin:6px 13px 13px; padding:13px; border:none; border-radius:10px; font-size:15.5px; font-weight:700; background:var(--red); color:#fff; }
+  .phasefoot { display:flex; gap:8px; padding:6px 13px 13px; }
+  .phasebtn { flex:1; padding:13px; border:none; border-radius:10px; font-size:15.5px; font-weight:700; background:var(--red); color:#fff; }
   .phase.done .phasebtn { background:var(--good-bg); color:var(--good); }
-  .phasebtn:not(.ready):not(.donebtn) { background:var(--chip); color:var(--muted); }
+  .phasebtn.wait { background:var(--chip); color:var(--muted); }
+  .notebtn { flex:0 0 auto; border:1px solid var(--line-2); background:var(--surface); color:var(--muted); font-weight:600; font-size:13.5px; border-radius:10px; padding:0 14px; }
+  .notebtn.has { border-color:var(--warn); color:var(--warn); background:var(--warn-bg); }
   .listnotes { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; }
   .listnotes label { font-size:12.5px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
   .listnotes textarea { width:100%; min-height:80px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
-
-  /* ---------- notes sheet ---------- */
-  .sheetwrap { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:flex; align-items:flex-end; }
-  .sheet { background:var(--bg); width:100%; max-height:88dvh; border-radius:16px 16px 0 0; display:flex; flex-direction:column; }
-  .sheet .sh { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; }
-  .sheet .sh h2 { font-size:22px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; }
-  .sheet .sb { overflow-y:auto; padding:0 12px calc(16px + var(--safe-b)); }
-  .notegroup { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; margin-bottom:12px; }
-  .notegroup h3 { font-size:17px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; margin-bottom:8px; }
-  .notegroup h3 em { color:var(--red); font-style:normal; }
-  .noteline { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
-  .noteline:first-of-type { border-top:none; }
-  .noteline .w { flex:0 0 auto; color:var(--muted); font-weight:600; font-size:12px; white-space:nowrap; margin-top:1px; }
-  .noteline .t { flex:1; min-width:0; }
-  .noteline .t small { display:block; color:var(--faint); font-size:11.5px; }
-  .noteline button { border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 8px; }
-  .notegroup textarea { width:100%; min-height:72px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
 
   /* ---------- report ---------- */
   .report { max-width:640px; margin:0 auto; }
@@ -216,31 +236,43 @@
   .report .head .sub { color:#B8B8C0; font-size:13px; margin-top:3px; }
   .report .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:13.5px; margin-top:10px; }
   .report .kv b { color:#8E8E99; font-weight:600; }
-  .report table { width:100%; border-collapse:collapse; font-size:13.5px; }
-  .report th { text-align:left; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-size:12px; color:var(--muted); padding:8px 12px 6px; border-bottom:1px solid var(--line); }
-  .report td { padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
-  .report td.r, .report th.r { text-align:right; white-space:nowrap; }
-  .report td em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; margin-right:6px; }
-  .report tr.miss td { color:var(--bad); }
-  .report tr.pause td { background:var(--warn-bg); border-bottom-color:var(--warn-bg); font-size:12.5px; padding-top:5px; padding-bottom:5px; }
-  .report .note { padding:10px 12px; font-size:13.5px; white-space:pre-wrap; }
   .report .lt { display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px 4px; gap:10px; }
   .report .lt h3 { font-size:19px; font-weight:700; letter-spacing:.02em; }
-  .report .lt .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:18px; white-space:nowrap; }
+  .report .lt .d { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:16px; white-space:nowrap; text-align:right; }
+  .report .note { padding:10px 12px; font-size:13.5px; white-space:pre-wrap; }
+  .tl { display:flex; height:22px; border-radius:6px; overflow:hidden; margin:6px 12px 4px; background:var(--chip); }
+  .tl i { display:block; height:100%; min-width:2px; position:relative; }
+  .tl i.p0 { background:#3A3A42; } .tl i.p1 { background:#55555F; }
+  .tl i.pz { background:var(--warn); }
+  .tl i.ov { box-shadow: inset 0 -4px 0 var(--red); }
+  .tl i span { position:absolute; inset:0; display:grid; place-items:center; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:11px; color:#fff; overflow:hidden; white-space:nowrap; }
+  .tlkey { display:flex; gap:12px; padding:2px 12px 8px; font-size:11.5px; color:var(--muted); }
+  .tlkey i { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:4px; }
+  .prow { display:flex; justify-content:space-between; gap:10px; padding:9px 12px; border-top:1px solid var(--line); }
+  .prow .n { min-width:0; }
+  .prow .n b { display:block; font-size:14px; }
+  .prow .n b em { color:var(--red); font-style:normal; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; margin-right:6px; }
+  .prow .n small { color:var(--muted); font-size:12.5px; }
+  .prow .r { flex:0 0 auto; text-align:right; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:18px; white-space:nowrap; }
+  .prow .r small { display:block; font-family:'Barlow',sans-serif; font-weight:500; font-size:11.5px; color:var(--muted); }
+  .prow.miss .n b, .prow.miss .r { color:var(--faint); }
+  .prow.pause { background:var(--warn-bg); border-top-color:var(--warn-bg); }
+  .prow.pause .n b, .prow.pause .r { color:var(--warn); }
+  .prow.over .r { color:var(--bad); }
 
   /* ---------- team / history ---------- */
-  .rowitem { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--line); width:100%; text-align:left; background:none; border-left:none; border-right:none; border-bottom:none; color:inherit; }
+  .rowitem { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--line); width:100%; text-align:left; background:none; border-left:none; border-right:none; border-bottom:none; color:inherit; min-height:52px; }
   .rowitem:first-child { border-top:none; }
   .rowitem .n { font-weight:600; }
   .rowitem .s { color:var(--muted); font-size:12.5px; }
   .rowitem .big { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:20px; white-space:nowrap; }
   .seg { display:flex; background:var(--chip); border-radius:9px; padding:3px; }
-  .seg button { flex:1; border:none; background:transparent; padding:7px; border-radius:7px; font-weight:600; font-size:13px; color:var(--muted); }
+  .seg button { flex:1; border:none; background:transparent; padding:7px; border-radius:7px; font-weight:600; font-size:13px; color:var(--muted); min-height:38px; }
   .seg button.on { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
   .editrow { padding:12px 14px; border-top:1px solid var(--line); background:var(--surface-2); }
 
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
-  @media (min-width: 720px) { .main { padding-inline:calc((100vw - 680px)/2); } .pane { padding-inline:calc((100vw - 680px)/2); } .carchips, .jobhead, .topbar { padding-inline:calc((100vw - 680px)/2 + 14px); } .actionbar { padding-inline:calc((100vw - 680px)/2); } .sheet { max-width:720px; margin:0 auto; } }
+  @media (min-width: 720px) { .main { padding-inline:calc((100vw - 680px)/2); } .pane { padding-inline:calc((100vw - 680px)/2); } .jobtop, .topbar { padding-inline:calc((100vw - 680px)/2 + 14px); } .actionbar { padding-inline:calc((100vw - 680px)/2); } .sheet { max-width:720px; margin:0 auto; } }
 </style>
 </head>
 <body>
@@ -249,8 +281,8 @@
 
 <script>
 /* =====================================================================
-   3X JOB BOARD v3 · offline job runner for 3X Detailing
-   Phase-level check-offs · one job per car · all data on this phone.
+   3X JOB BOARD v4 · offline job runner for 3X Detailing
+   Phase-level check-offs · per-checklist clocks · one job per car.
    ===================================================================== */
 
 // ---------- Checklist library (mirrors 3XD SOC001–006, rev 09/11/2026) ----------
@@ -265,7 +297,7 @@ const CLOSEOUT_STEPS = [
 const closeout = n => [n, "VEHICLE SECURING & SITE CLOSE-OUT", "~5 min · the job isn't done until the car is protected", CLOSEOUT_STEPS, CLOSEOUT_POLICY];
 
 const LISTS = {
- SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", phases:[
+ SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", short:"Interior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
    "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)",
@@ -294,7 +326,7 @@ const LISTS = {
    "Final visual scan — anything missed gets redone NOW"]],
   closeout("PHASE 8")
  ]},
- SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", phases:[
+ SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", short:"Exterior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
    "Generator on · pressure washer, water pump plugged in · bucket sudsed & pressurized"]],
@@ -328,7 +360,7 @@ const LISTS = {
    "Every note fixed before leaving · job photos/notes sent to Sam"]],
   closeout("PHASE 10")
  ]},
- SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", phases:[
+ SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", short:"Interior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged for display · generator on · vacuum, pressure washer, water pump + AIR COMPRESSOR plugged in",
    "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
@@ -361,7 +393,7 @@ const LISTS = {
    "Belongings returned neatly · flashlight walk of every phase — anything not like-new redone NOW"]],
   closeout("PHASE 10")
  ]},
- SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", phases:[
+ SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", short:"Exterior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
    "Table staged · generator on · pressure washer + water pump plugged in · bucket sudsed & pressurized",
    "LARGE stack of fresh wash mitts staged (deep clean burns through mitts)"]],
@@ -400,7 +432,7 @@ const LISTS = {
    "Flashlight walk from Phase 3 · every note fixed before leaving · photos/notes sent to Sam"]],
   closeout("PHASE 11")
  ]},
- SOC005: { code:"SOC005", sop:"SOP005", title:"Decon & Ceramic Seal", phases:[
+ SOC005: { code:"SOC005", sop:"SOP005", title:"Decon & Ceramic Seal", short:"Decon", phases:[
   ["PHASE D1","CHEMICAL DECON — IRON REMOVER","runs right after the Contact Wash · car still wet & sudsy",[
    "Iron remover applied to ENTIRE car: paint, wheels, trim, glass — everything",
    "Dwell = product instructions exactly · NEVER allowed to dry · cool surfaces & shade rules apply",
@@ -423,7 +455,7 @@ const LISTS = {
    "Client told: 4–6 months of protection depending on how the car is treated"]],
   closeout("PHASE D4")
  ]},
- SOC006: { code:"SOC006", sop:"SOP006", title:"Engine Bay", phases:[
+ SOC006: { code:"SOC006", sop:"SOP006", title:"Engine Bay", short:"Engine Bay", phases:[
   ["PHASE E1","SAFETY GATE & PROTECTION","~5 min · cool to the touch or WAIT",[
    "Client confirmed car not driven recently · every surface cool to the touch",
    "Delicate/exotic/vintage bay screened by photo BEFORE accepting — declined if dangerous",
@@ -444,15 +476,12 @@ const LISTS = {
    "Spot-free water confirmed · sealant applied onto the WET bay",
    "Hood closed · air dries — no wiping · exterior wash follows and clears all overspray"]]
  ], footer:"Vehicle Securing & Site Close-Out runs at the end of the exterior checklist — not here." },
- // Services without a written SOP yet: one timed phase so the job still gets tracked.
- GEN_PC2: { code:"GEN_PC2", title:"Two-Stage Correction & Ceramic", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Two-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
- GEN_PC1: { code:"GEN_PC1", title:"Single-Stage Correction & Ceramic", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Single-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
- GEN_ICP: { code:"GEN_ICP", title:"Interior Ceramic Protection", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior ceramic protection applied to leather, plastics and interior surfaces to 3X standard · photos + notes sent to Sam"]]] },
- GEN_ISR: { code:"GEN_ISR", title:"Interior Surface Restoration", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior plastics, piano black and delicate trim corrected to 3X standard · photos + notes sent to Sam"]]] },
+ GEN_PC2: { code:"GEN_PC2", title:"Two-Stage Correction & Ceramic", short:"2-Stage", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Two-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
+ GEN_PC1: { code:"GEN_PC1", title:"Single-Stage Correction & Ceramic", short:"1-Stage", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Single-stage paint correction and ceramic coating completed to 3X standard · photos + notes sent to Sam"]], closeout("PHASE 2")] },
+ GEN_ICP: { code:"GEN_ICP", title:"Interior Ceramic Protection", short:"Int. Ceramic", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior ceramic protection applied to leather, plastics and interior surfaces to 3X standard · photos + notes sent to Sam"]]] },
+ GEN_ISR: { code:"GEN_ISR", title:"Interior Surface Restoration", short:"Int. Restore", generic:true, phases:[["PHASE 1","SERVICE PERFORMED","no written procedure yet — timed as one block",["Interior plastics, piano black and delicate trim corrected to 3X standard · photos + notes sent to Sam"]]] },
 };
 const LIST_ORDER = ["SOC001","SOC002","SOC003","SOC004","SOC005","SOC006","GEN_PC2","GEN_PC1","GEN_ICP","GEN_ISR"];
-
-// ---------- Service menu (3X Pricing Sheet) → checklists ----------
 const SERVICES = [
   { id:"cmd",   group:"Enhancement Services",      name:"Complete Maintenance Detail",              price:"$125–150",   lists:["SOC001","SOC002"] },
   { id:"deep",  group:"Enhancement Services",      name:"Interior & Exterior Deep Cleaning",        price:"$250–300",   lists:["SOC003","SOC004"] },
@@ -466,31 +495,28 @@ const SERVICES = [
 const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
 const ROLES = { owner:"Owner", lead:"Team Lead", tech:"Technician" };
 const listsForServices = ids => LIST_ORDER.filter(c => ids.some(id => (SVC[id] || {lists:[]}).lists.includes(c)));
+function targetMin(sub){ const m = /(\d+)\s*[–-]\s*(\d+)\s*min|(\d+)\s*min/.exec(String(sub || "")); if (!m) return null; return m[2] ? +m[2] : +m[3]; }
+const OVER = 1.5; // "ran long" = more than 1.5× the phase target
 
-// ---------- persistence + migration ----------
+// ---------- persistence + migrations ----------
 const KEY = "3x_jobboard_v1";
 let DB = load();
 function load(){
   let d = null; try { d = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
-  if (!d) return { v:3, users:[], jobs:[], session:null, theme:"auto" };
+  if (!d) return { v:3, users:[], jobs:[], session:null, theme:"auto", nudged:0 };
   if (d.v === 1) migrateV1(d);
   if (d.v === 2) migrateV2(d);
+  if (d.nudged == null) d.nudged = 0;
   return d;
 }
-function migrateV2(d){ // v3: per-checklist clocks (runs = active intervals)
-  d.jobs.forEach(job => Object.values(job.lists).forEach(L => { if (!L.runs) L.runs = job.arrivedAt ? [{ start:job.arrivedAt, end:job.finishedAt || null }] : []; }));
-  d.v = 3;
-}
+function migrateV2(d){ d.jobs.forEach(job => Object.values(job.lists).forEach(L => { if (!L.runs) L.runs = job.arrivedAt ? [{ start:job.arrivedAt, end:job.finishedAt || null }] : []; })); d.v = 3; }
 function migrateV1(d){
   d.jobs.forEach(job => {
-    const codes = job.services || [];
-    // infer services from the checklist set
-    const ids = []; let left = new Set(codes);
+    const codes = job.services || []; const ids = []; let left = new Set(codes);
     [ "decon","deep","cmd","eng" ].forEach(id => { const s = SVC[id]; if (s.lists.every(c => left.has(c))) { ids.push(id); s.lists.forEach(c => left.delete(c)); } });
     job.serviceIds = ids; job.extraLists = [...left];
     Object.keys(job.lists || {}).forEach(code => {
-      const L = job.lists[code]; if (L.phases) return;
-      const ph = {}; const def = LISTS[code];
+      const L = job.lists[code]; if (L.phases) return; const ph = {}; const def = LISTS[code];
       if (def) def.phases.forEach((p, pi) => { const ts = p[3].map((_, ii) => (L.checks || {})[pi+"_"+ii]).filter(Boolean); if (ts.length === p[3].length && ts.length) ph[pi] = Math.max(...ts); });
       L.phases = ph; delete L.checks; L.flags = L.flags || {}; L.notes = L.notes || "";
     });
@@ -504,36 +530,22 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 // ---------- password hashing (local gate, not bank-grade) ----------
 async function hashPw(pw, salt){
   const s = salt + "|" + pw;
-  if (window.crypto && crypto.subtle) {
-    try { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join(""); } catch(e){}
-  }
-  let h1 = 0x811c9dc5, h2 = 5381;
-  for (let i=0;i<s.length;i++){ const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = ((h2 << 5) + h2 + c) >>> 0; }
+  if (window.crypto && crypto.subtle) { try { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join(""); } catch(e){} }
+  let h1 = 0x811c9dc5, h2 = 5381; for (let i=0;i<s.length;i++){ const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = ((h2 << 5) + h2 + c) >>> 0; }
   return "f:" + h1.toString(16) + h2.toString(16);
 }
 
 // ---------- time helpers ----------
 const fmtT = ts => ts ? new Date(ts).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) : "—";
 const fmtDate = d => { const [y,m,dd] = d.split("-"); return new Date(+y, +m-1, +dd).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}); };
-function fmtD(ms){
-  if (ms == null || ms < 0) return "—";
-  const s = Math.round(ms/1000); if (s < 60) return s + "s";
-  const m = Math.floor(s/60), h = Math.floor(m/60);
-  return h ? `${h}h ${String(m%60).padStart(2,"0")}m` : `${m}m`;
-}
+function fmtD(ms){ if (ms == null || ms < 0) return "—"; const s = Math.round(ms/1000); if (s < 60) return s + "s"; const m = Math.floor(s/60), h = Math.floor(m/60); return h ? `${h}h ${String(m%60).padStart(2,"0")}m` : `${m}m`; }
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
-function setTimeOfDay(baseTs, hhmm){
-  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m?)?\s*$/i.exec(hhmm || ""); if (!m) return null;
-  let h = +m[1], mi = +(m[2]||0); const ap = (m[3]||"").toLowerCase();
-  if (ap.startsWith("p") && h < 12) h += 12; if (ap.startsWith("a") && h === 12) h = 0;
-  if (h > 23 || mi > 59) return null;
-  const d = new Date(baseTs || Date.now()); d.setHours(h, mi, 0, 0); return d.getTime();
-}
+const hhmm = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
+function withTime(baseTs, v){ const m = /^(\d{1,2}):(\d{2})$/.exec(v || ""); if (!m) return null; const d = new Date(baseTs || Date.now()); d.setHours(+m[1], +m[2], 0, 0); return d.getTime(); }
 
 // ---------- job computations ----------
-const jobLists = job => Object.keys(job.lists).length ? LIST_ORDER.filter(c => job.lists[c]) : [];
+const jobLists = job => LIST_ORDER.filter(c => job.lists[c]);
 const jobServiceNames = job => job.serviceIds.map(id => (SVC[id] || {name:id}).name).concat((job.extraLists || []).map(c => LISTS[c].title));
-// --- per-checklist clock: runs = [{start, end|null, reason}] ; active time only counts inside runs ---
 const runsOf = (job, code) => job.lists[code].runs || (job.lists[code].runs = []);
 function activeBetween(runs, from, to){ if (from == null || to == null || to <= from) return 0; let s = 0; for (const r of runs){ const a = Math.max(from, r.start), b = Math.min(to, r.end == null ? to : r.end); if (b > a) s += b - a; } return s; }
 function listRunning(job, code){ const r = runsOf(job, code); return !!(r.length && r[r.length-1].end == null); }
@@ -541,58 +553,27 @@ function listPausedSince(job, code){ const r = runsOf(job, code); return (r.leng
 function ensureRuns(job){ if (!job.arrivedAt) return; jobLists(job).forEach(c => { const r = runsOf(job, c); if (!r.length) r.push({ start:job.arrivedAt, end:null }); }); }
 function pauseList(job, code, reason){ const r = runsOf(job, code); const last = r[r.length-1]; if (last && last.end == null) { last.end = Date.now(); last.reason = reason; } }
 function resumeList(job, code){ const r = runsOf(job, code); if (!r.length || r[r.length-1].end != null) r.push({ start:Date.now(), end:null }); }
-function listPauses(job, code){ // gaps between runs, with the reason given when the pause started
-  const r = runsOf(job, code); const out = []; const endCap = job.finishedAt || Date.now();
-  r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); });
-  return out;
-}
-// --- shared setup: Unload & Setup happens once per stop, so one mark applies to every arrived car on the board ---
-const SHARED_PHASE = "UNLOAD & SETUP";
-const hasSharedSetup = code => LISTS[code].phases[0] && LISTS[code].phases[0][1] === SHARED_PHASE;
-const normName = s => String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-function sameClient(a, b){ // "Bob" ≈ "Bob Smith" ≈ "bob smith"
-  const x = normName(a), y = normName(b); if (!x || !y) return false; if (x === y) return true;
-  const fx = x.split(" ")[0], fy = y.split(" ")[0]; return fx.length >= 3 && fx === fy;
-}
-function markSetupEverywhere(ts, job){ // one setup per stop: same day, same client, cars on the board that have arrived
-  let n = 0;
-  DB.jobs.filter(j => j.id !== job.id && j.status === "active" && j.arrivedAt && j.date === job.date && sameClient(j.client, job.client)).forEach(j => jobLists(j).forEach(c => {
-    if (hasSharedSetup(c) && !j.lists[c].phases[0]) { j.lists[c].phases[0] = Math.max(ts, j.arrivedAt); n++; }
-  }));
-  return n;
-}
-function adoptSetup(job){ // a car added while we're still at the same client's place → setup already done
-  const now = job.arrivedAt; const STILL_THERE = 45*60*1000, MAX_AGE = 6*3600*1000;
-  const cands = DB.jobs.filter(j => j.id !== job.id && j.arrivedAt && j.date === job.date && sameClient(j.client, job.client)
-    && (j.status === "active" || (j.finishedAt && now - j.finishedAt <= STILL_THERE)));
-  const stamps = cands.flatMap(j => jobLists(j).filter(hasSharedSetup).map(c => j.lists[c].phases[0]).filter(Boolean));
-  if (!stamps.length) return 0;
-  const ts = Math.max(...stamps); if (now - ts > MAX_AGE) return 0;
-  let n = 0; jobLists(job).forEach(c => { if (hasSharedSetup(c) && !job.lists[c].phases[0]) { job.lists[c].phases[0] = Math.max(ts, now); n++; } });
-  return n;
-}
-function pausesInPhase(pauses, st, pi){ // a pause belongs to the phase that was open when it started; pi = -1 → after every phase was done
-  const owner = p => { for (let i = 0; i < st.length; i++) { const s = st[i]; const from = s.startAt, to = s.endAt; if (from == null) return -1; if (p.from >= from && (to == null || p.from < to)) return i; } return -1; };
-  return pauses.filter(p => owner(p) === pi);
-}
+function listPauses(job, code){ const r = runsOf(job, code); const out = []; const endCap = job.finishedAt || Date.now(); r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); }); return out; }
 function listActiveTotal(job, code){ if (!job.arrivedAt) return null; return activeBetween(runsOf(job, code), job.arrivedAt, job.finishedAt || Date.now()); }
 function listPausedTotal(job, code){ return listPauses(job, code).reduce((a,p) => a + p.ms, 0); }
 function phaseStats(job, code){
   const L = job.lists[code]; const defs = LISTS[code].phases; const runs = runsOf(job, code); const out = []; let current = -1;
   defs.forEach((ph, pi) => {
-    const endAt = L.phases[pi] || null;
-    const prevEnd = pi === 0 ? (job.arrivedAt || null) : (L.phases[pi-1] || null);
-    const st = { pi, complete: !!endAt, endAt, startAt: prevEnd, duration: (endAt && prevEnd) ? activeBetween(runs, prevEnd, endAt) : null, running:false, elapsed:null };
-    if (!endAt && current < 0) { current = pi; st.running = !!prevEnd && !job.finishedAt; if (st.running) st.elapsed = activeBetween(runs, prevEnd, Date.now()); }
+    const endAt = L.phases[pi] || null; const prevEnd = pi === 0 ? (job.arrivedAt || null) : (L.phases[pi-1] || null); const target = targetMin(ph[2]);
+    const st = { pi, complete: !!endAt, endAt, startAt: prevEnd, duration: (endAt && prevEnd) ? activeBetween(runs, prevEnd, endAt) : null, running:false, elapsed:null, target, current:false, over:false };
+    if (!endAt && current < 0) { current = pi; st.current = true; st.running = !!prevEnd && !job.finishedAt; if (st.running) st.elapsed = activeBetween(runs, prevEnd, Date.now()); }
+    const t = target ? target*60000 : null; const v = st.complete ? st.duration : st.elapsed; st.over = !!(t && v != null && v > t*OVER);
     out.push(st);
   });
   return out;
 }
 function listProgress(job, code){ const t = LISTS[code].phases.length; const d = Object.keys(job.lists[code].phases).length; return {d, t}; }
-function listSpan(job, code){ // active time from arrival to the last completed phase (or now while the job is open)
-  const v = Object.values(job.lists[code].phases); if (!job.arrivedAt && !v.length) return null;
-  const start = job.arrivedAt || Math.min(...v); const end = v.length ? Math.max(...v) : (job.finishedAt || Date.now());
-  const lp = listProgress(job, code); return activeBetween(runsOf(job, code), start, lp.d === lp.t ? end : (job.finishedAt || Date.now()));
+function listSpan(job, code){ const v = Object.values(job.lists[code].phases); if (!job.arrivedAt && !v.length) return null; const start = job.arrivedAt || Math.min(...v); const end = v.length ? Math.max(...v) : (job.finishedAt || Date.now()); const lp = listProgress(job, code); return activeBetween(runsOf(job, code), start, lp.d === lp.t ? end : (job.finishedAt || Date.now())); }
+function listStatus(job, code){
+  const lp = listProgress(job, code); if (job.status === "done" || lp.d === lp.t) return { cls:"done", text:`✓ done · ${fmtD(listSpan(job, code))}` };
+  if (!job.arrivedAt) return { cls:"", text:"not started" };
+  const pz = listPausedSince(job, code); if (pz) return { cls:"paused", text:`paused ${fmtD(Date.now() - pz.end)}` };
+  const st = phaseStats(job, code); const cur = st.find(s => s.current); return { cls:"", text:`${LISTS[code].phases[cur.pi][0].replace("PHASE ", "Phase ")} · ${fmtD(cur.elapsed)}` };
 }
 function jobProgress(job){ let d=0,t=0; jobLists(job).forEach(c => { const p = listProgress(job,c); d += p.d; t += p.t; }); return {d,t,pct: t ? Math.round(100*d/t) : 0}; }
 function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; jobLists(job).forEach(c => Object.values(job.lists[c].phases).forEach(ts => { if (ts > m) m = ts; })); return m; }
@@ -600,65 +581,97 @@ function jobTotal(job){ if (!job.arrivedAt) return null; return (job.finishedAt 
 const userName = id => (DB.users.find(u => u.id === id) || {}).name || "—";
 const me = () => DB.users.find(u => u.id === (DB.session && DB.session.userId)) || null;
 const isOwner = () => (me() || {}).role === "owner";
-function allNotes(job){ // aggregated notes in reading order
-  const out = [];
-  if (job.notes) out.push({ where:"Job", what:job.notes, kind:"job" });
-  jobLists(job).forEach(code => {
-    const L = job.lists[code]; const S = LISTS[code];
-    S.phases.forEach((ph, pi) => ph[3].forEach((txt, ii) => { const f = L.flags[pi+"_"+ii]; if (f) out.push({ where:`${S.title} · ${ph[0]}`, what:f, step:txt, kind:"step", code, k:pi+"_"+ii }); }));
-    if (L.notes) out.push({ where:S.title, what:L.notes, kind:"list", code });
-  });
+function allNotes(job){
+  const out = []; if (job.notes) out.push({ where:"Job", what:job.notes, kind:"job" });
+  jobLists(job).forEach(code => { const L = job.lists[code]; const S = LISTS[code];
+    S.phases.forEach((ph, pi) => { const g = L.flags[pi+"_g"]; if (g) out.push({ where:`${S.title} · ${ph[0]}`, what:g, step:"(phase note)", kind:"step", code, k:pi+"_g" });
+      ph[3].forEach((txt, ii) => { const f = L.flags[pi+"_"+ii]; if (f) out.push({ where:`${S.title} · ${ph[0]}`, what:f, step:txt, kind:"step", code, k:pi+"_"+ii }); }); });
+    if (L.notes) out.push({ where:S.title, what:L.notes, kind:"list", code }); });
   return out;
 }
+function overruns(job){ const out = []; jobLists(job).forEach(code => phaseStats(job, code).forEach(s => { if (s.complete && s.over) out.push({ code, s, ph:LISTS[code].phases[s.pi] }); })); return out; }
+function pausesInPhase(pauses, st, pi){ const owner = p => { for (let i = 0; i < st.length; i++) { const s = st[i]; if (s.startAt == null) return -1; if (p.from >= s.startAt && (s.endAt == null || p.from < s.endAt)) return i; } return -1; }; return pauses.filter(p => owner(p) === pi); }
 
-// ---------- share text (short) + full detail ----------
+// --- shared setup: one Unload & Setup per stop, same client ---
+const SHARED_PHASE = "UNLOAD & SETUP";
+const hasSharedSetup = code => LISTS[code].phases[0] && LISTS[code].phases[0][1] === SHARED_PHASE;
+const normName = s => String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function sameClient(a, b){ const x = normName(a), y = normName(b); if (!x || !y) return false; if (x === y) return true; const fx = x.split(" ")[0], fy = y.split(" ")[0]; return fx.length >= 3 && fx === fy; }
+function markSetupEverywhere(ts, job){ let n = 0; DB.jobs.filter(j => j.status === "active" && j.arrivedAt && j.date === job.date && (j.id === job.id || sameClient(j.client, job.client))).forEach(j => jobLists(j).forEach(c => { if (hasSharedSetup(c) && !j.lists[c].phases[0]) { j.lists[c].phases[0] = Math.max(ts, j.arrivedAt); n++; } })); return n; }
+function adoptSetup(job){
+  const now = job.arrivedAt; const STILL_THERE = 45*60*1000, MAX_AGE = 6*3600*1000;
+  const cands = DB.jobs.filter(j => j.id !== job.id && j.arrivedAt && j.date === job.date && sameClient(j.client, job.client) && (j.status === "active" || (j.finishedAt && now - j.finishedAt <= STILL_THERE)));
+  const stamps = cands.flatMap(j => jobLists(j).filter(hasSharedSetup).map(c => j.lists[c].phases[0]).filter(Boolean)); if (!stamps.length) return 0;
+  const ts = Math.max(...stamps); if (now - ts > MAX_AGE) return 0;
+  let n = 0; jobLists(job).forEach(c => { if (hasSharedSetup(c) && !job.lists[c].phases[0]) { job.lists[c].phases[0] = Math.max(ts, now); n++; } }); return n;
+}
+
+// ---------- share text ----------
 function summaryText(job){
-  const L = [];
-  L.push(`3X JOB · ${fmtDate(job.date)}`);
-  L.push(`${job.client} · ${job.vehicle}`);
-  L.push(`Service: ${jobServiceNames(job).join(" + ")}`);
-  L.push(`Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · ${fmtD(jobTotal(job))} on site`);
-  L.push(`Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`);
+  const L = [`3X JOB · ${fmtDate(job.date)}`, `${job.client} · ${job.vehicle}`, `Service: ${jobServiceNames(job).join(" + ")}`,
+    `Arrived ${fmtT(job.arrivedAt)} · Finished ${fmtT(job.finishedAt)} · ${fmtD(jobTotal(job))} on site`,
+    `Lead: ${userName(job.leadId)}${job.techIds.length ? " · Tech: " + job.techIds.map(userName).join(", ") : ""}`];
   if (job.finishNote) L.push(`⚑ Finished with open phases: ${job.finishNote}`);
-  const clocks = jobLists(job).map(code => { const p = listPausedTotal(job, code); return `${LISTS[code].title} ${fmtD(listActiveTotal(job, code))} active${p ? ` (paused ${fmtD(p)})` : ""}`; });
-  if (clocks.length) L.push(`Checklists: ${clocks.join(" · ")}`);
-  const notes = allNotes(job);
-  if (notes.length) { L.push(""); L.push("NOTES"); notes.forEach(n => L.push(`• ${n.where}: ${n.what}`)); } else { L.push(""); L.push("No notes."); }
-  const pauses = jobLists(job).flatMap(code => listPauses(job, code).map(p => `• ${LISTS[code].title} paused ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)})${p.reason ? ": " + p.reason : ""}`));
-  if (pauses.length) { L.push(""); L.push("PAUSES"); pauses.forEach(x => L.push(x)); }
+  const clocks = jobLists(job).map(code => { const p = listPausedTotal(job, code); return `${LISTS[code].title} ${fmtD(listActiveTotal(job, code))} active${p ? ` (paused ${fmtD(p)})` : ""}`; }); if (clocks.length) L.push(`Checklists: ${clocks.join(" · ")}`);
+  const ov = overruns(job); if (ov.length) { L.push(""); L.push("RAN LONG"); ov.forEach(o => L.push(`• ${LISTS[o.code].title} ${o.ph[0]} ${o.ph[1]}: ${fmtD(o.s.duration)} (target ~${o.s.target}m)`)); }
+  const notes = allNotes(job); if (notes.length) { L.push(""); L.push("NOTES"); notes.forEach(n => L.push(`• ${n.where}: ${n.what}`)); } else { L.push(""); L.push("No notes."); }
+  const pauses = jobLists(job).flatMap(code => listPauses(job, code).map(p => `• ${LISTS[code].title} paused ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)})${p.reason ? ": " + p.reason : ""}`)); if (pauses.length) { L.push(""); L.push("PAUSES"); pauses.forEach(x => L.push(x)); }
   return L.join("\n");
 }
 function fullText(job){
   const L = [summaryText(job), "", "PHASE TIMING (active time only)"];
-  jobLists(job).forEach(code => {
-    const S = LISTS[code]; const st = phaseStats(job, code); const p = listProgress(job, code);
+  jobLists(job).forEach(code => { const S = LISTS[code]; const st = phaseStats(job, code); const p = listProgress(job, code); const pauses = listPauses(job, code);
     L.push(""); L.push(`${S.title.toUpperCase()} — ${p.d} of ${p.t} phases · ${fmtD(listActiveTotal(job, code))} active · ${fmtD(listPausedTotal(job, code))} paused`);
-    const pauses = listPauses(job, code);
-    S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)})` : "NOT DONE"}`);
+    S.phases.forEach((ph, pi) => { const s = st[pi]; L.push(` ${ph[0]} ${ph[1]} — ${s.complete ? `${fmtT(s.startAt)}→${fmtT(s.endAt)} (${fmtD(s.duration)}${s.target ? ` / ~${s.target}m` : ""})${s.over ? " RAN LONG" : ""}` : "NOT DONE"}`);
       pausesInPhase(pauses, st, pi).forEach(p => L.push(`   ❚❚ paused ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${p.reason || "no reason given"}`)); });
-    pausesInPhase(pauses, st, -1).forEach(p => L.push(` ❚❚ paused after last phase ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${p.reason || "no reason given"}`));
-  });
+    pausesInPhase(pauses, st, -1).forEach(p => L.push(` ❚❚ paused after last phase ${fmtT(p.from)}–${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${p.reason || "no reason given"}`)); });
   return L.join("\n");
 }
 
 // ---------- UI state ----------
-const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", histDetail:null, newjob:null, editUser:null, sheet:false };
+const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", histDetail:null, newjob:null, editUser:null, sheet:false, open:new Set(), closed:new Set() };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $ = sel => document.querySelector(sel);
 const app = document.getElementById("app");
 let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
 function applyTheme(){ const r = document.documentElement; if (DB.theme === "light" || DB.theme === "dark") r.setAttribute("data-theme", DB.theme); else r.removeAttribute("data-theme"); }
-function go(screen, extra){ Object.assign(ui, {screen, sheet:false}, extra || {}); render(); }
-let liveTimer = null;
-function setLive(fn){ clearInterval(liveTimer); liveTimer = fn ? setInterval(fn, 1000) : null; }
+function go(screen, extra){ if (screen !== "job") releaseWake(); if (screen === "job" && extra && extra.jobId !== ui.jobId) { ui.open = new Set(); ui.closed = new Set(); } Object.assign(ui, {screen, sheet:false}, extra || {}); closeSheet(); render(); }
+let liveTimer = null; function setLive(fn){ clearInterval(liveTimer); liveTimer = fn ? setInterval(fn, 1000) : null; }
+let wake = null; async function requestWake(){ try { if ("wakeLock" in navigator && !wake) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); } } catch(e){} }
+function releaseWake(){ try { if (wake) { wake.release(); wake = null; } } catch(e){} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ui.screen === "job") requestWake(); });
+
+// ---------- sheets (in-app replacements for prompt/confirm) ----------
+function closeSheet(){ const s = $("#sheet"); if (s) s.remove(); }
+function openSheet(title, bodyHtml, opts){
+  closeSheet(); const o = opts || {};
+  document.body.insertAdjacentHTML("beforeend", `<div class="sheetwrap" id="sheet"><div class="sheet"><div class="sh"><h2>${title}</h2><button class="btn small" id="sheetclose">${esc(o.closeLabel || "Cancel")}</button></div><div class="sb">${bodyHtml}</div></div></div>`);
+  const sheet = $("#sheet"); const close = () => { sheet.remove(); if (o.onClose) o.onClose(); };
+  $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
+  return { el:sheet, close };
+}
+function textSheet(o){ // {title, label, value, placeholder, onSave(text), allowEmpty, saveLabel, hint}
+  const s = openSheet(o.title, `<div class="notegroup">${o.label ? `<h3>${o.label}</h3>` : ""}<textarea id="sh_text" placeholder="${esc(o.placeholder || "")}">${esc(o.value || "")}</textarea><div class="sheetbtns"><button class="btn primary" id="sh_save">${esc(o.saveLabel || "Save")}</button>${o.value && !o.allowEmpty ? `<button class="btn ghost danger" id="sh_clear">Remove</button>` : ""}</div></div>${o.hint ? `<div class="hint">${o.hint}</div>` : ""}`);
+  const ta = $("#sh_text"); setTimeout(() => ta.focus(), 80);
+  $("#sh_save").onclick = () => { const v = ta.value.trim(); if (!v && !o.allowEmpty) { ta.focus(); return; } s.close(); o.onSave(v); };
+  const c = $("#sh_clear"); if (c) c.onclick = () => { s.close(); o.onSave(""); };
+}
+function timeSheet(o){ // {title, ts, hint, onSave(ts), onUndo?, undoLabel}
+  const s = openSheet(o.title, `<div class="notegroup"><input class="timein num" id="sh_time" type="time" value="${hhmm(o.ts)}"><div class="sheetbtns"><button class="btn primary" id="sh_save">Save time</button>${o.onUndo ? `<button class="btn ghost danger" id="sh_undo">${esc(o.undoLabel || "Undo")}</button>` : ""}</div></div>${o.hint ? `<div class="hint">${o.hint}</div>` : ""}`);
+  $("#sh_save").onclick = () => { const ts = withTime(o.ts, $("#sh_time").value); if (!ts) { toast("Pick a time"); return; } s.close(); o.onSave(ts); };
+  const u = $("#sh_undo"); if (u) u.onclick = () => { s.close(); o.onUndo(); };
+}
+function confirmSheet(o){ // {title, text, ok, danger, onOk}
+  const s = openSheet(o.title, `<div class="notegroup"><div style="font-size:15px;line-height:1.45">${o.text}</div><div class="sheetbtns"><button class="btn ${o.danger ? "ghost danger" : "primary"}" id="sh_ok">${esc(o.ok || "OK")}</button></div></div>`);
+  $("#sh_ok").onclick = () => { s.close(); o.onOk(); };
+}
 
 // ---------- storage health ----------
 function storageWarning(){
   let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
   let ok = true; try { localStorage.setItem("__3x_probe", "1"); ok = localStorage.getItem("__3x_probe") === "1"; localStorage.removeItem("__3x_probe"); } catch(e){ ok = false; }
   if (ok && !framed) return "";
-  const why = !ok ? "This browser is blocking storage, so nothing you enter here will be kept." : "This page is running inside another site's frame (a preview). On iPhone that storage is wiped when you leave.";
-  return `<div class="warnbar">⚠ ${why} Open the app at its own web address and add it to your Home Screen.</div>`;
+  return `<div class="warnbar">⚠ ${!ok ? "This browser is blocking storage, so nothing you enter here will be kept." : "This page is running inside another site's frame (a preview). On iPhone that storage is wiped when you leave."} Open the app at its own web address and add it to your Home Screen.</div>`;
 }
 
 // ---------- render root ----------
@@ -669,100 +682,69 @@ function render(){
   else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
   const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
-function topbar(title, sub, right){
-  return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px">${right || ""}</div></div></div>`;
-}
+function topbar(title, sub, right){ return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div></div>`; }
 function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 
-// ---------- first-run setup ----------
+// ---------- first-run setup + login ----------
 function renderSetup(){
-  app.innerHTML = `<div class="main"><div class="login">
-    <div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">First run on this phone. Create the owner account — it manages the team.</div>
-    <div class="card stack">
-      <div class="field"><label>Your name</label><input id="s_name" placeholder="Sam Schlaich" autocomplete="off"></div>
-      <div class="field"><label>Username</label><input id="s_user" placeholder="sam" autocapitalize="none" autocomplete="off"></div>
-      <div class="field"><label>Password</label><input id="s_pw" type="password" placeholder="at least 4 characters"></div>
-      <div class="err" id="s_err"></div>
-      <button class="btn primary" id="s_go">Create owner account</button>
-    </div></div></div>`;
-  $("#s_go").onclick = async () => {
-    const name = $("#s_name").value.trim(), user = $("#s_user").value.trim().toLowerCase(), pw = $("#s_pw").value;
-    if (!name || !user || pw.length < 4) { $("#s_err").textContent = "Name, username and a 4+ character password are required."; return; }
-    const salt = uid(); DB.users.push({ id:uid(), name, username:user, role:"owner", salt, hash: await hashPw(pw, salt), createdAt:Date.now() });
-    DB.session = { userId: DB.users[0].id }; save(); go("home");
-  };
+  app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">First run on this phone. Create the owner account — it manages the team.</div>
+    <div class="card stack"><div class="field"><label>Your name</label><input id="s_name" placeholder="Sam Schlaich" autocomplete="off"></div><div class="field"><label>Username</label><input id="s_user" placeholder="sam" autocapitalize="none" autocomplete="off"></div><div class="field"><label>Password</label><input id="s_pw" type="password" placeholder="at least 4 characters"></div><div class="err" id="s_err"></div><button class="btn primary" id="s_go">Create owner account</button></div></div></div>`;
+  $("#s_go").onclick = async () => { const name = $("#s_name").value.trim(), user = $("#s_user").value.trim().toLowerCase(), pw = $("#s_pw").value; if (!name || !user || pw.length < 4) { $("#s_err").textContent = "Name, username and a 4+ character password are required."; return; } const salt = uid(); DB.users.push({ id:uid(), name, username:user, role:"owner", salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); DB.session = { userId: DB.users[0].id }; save(); go("home"); };
 }
-
-// ---------- login ----------
 function renderLogin(){
-  app.innerHTML = `<div class="main"><div class="login">
-    <div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Sign in to run today's checklists.</div>
-    <div class="card stack">
-      <div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div>
-      <div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div>
-      <div class="err" id="l_err"></div>
-      <button class="btn primary" id="l_go">Sign in</button>
-    </div>
-    <div class="hint">Accounts are created by the owner in Team.</div></div></div>`;
-  const tryLogin = async () => {
-    const u = DB.users.find(x => x.username === $("#l_user").value.trim().toLowerCase());
-    if (!u || (await hashPw($("#l_pw").value, u.salt)) !== u.hash) { $("#l_err").textContent = "Wrong username or password."; return; }
-    DB.session = { userId:u.id }; save(); go("home");
-  };
-  $("#l_go").onclick = tryLogin; $("#l_pw").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
-  setTimeout(() => $("#l_user").focus(), 50);
+  app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Sign in to run today's checklists.</div>
+    <div class="card stack"><div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div><div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div><div class="err" id="l_err"></div><button class="btn primary" id="l_go">Sign in</button></div><div class="hint">Accounts are created by the owner in Team.</div></div></div>`;
+  const tryLogin = async () => { const u = DB.users.find(x => x.username === $("#l_user").value.trim().toLowerCase()); if (!u || (await hashPw($("#l_pw").value, u.salt)) !== u.hash) { $("#l_err").textContent = "Wrong username or password."; return; } DB.session = { userId:u.id }; save(); go("home"); };
+  $("#l_go").onclick = tryLogin; $("#l_pw").onkeydown = e => { if (e.key === "Enter") tryLogin(); }; setTimeout(() => $("#l_user").focus(), 50);
 }
 
 // ---------- home ----------
 function jobCard(job){
   const p = jobProgress(job); const done = job.status === "done";
-  const meta = [
-    `<span class="pill dark">${esc(userName(job.leadId))}</span>`,
-    ...jobServiceNames(job).map(n => `<span class="pill">${esc(n)}</span>`),
-    done ? `<span class="pill good">Done · ${fmtD(jobTotal(job))}</span>` : (job.arrivedAt ? `<span class="pill warn num">On site · <span data-live="total-${job.id}">${fmtD(jobTotal(job))}</span></span>` : `<span class="pill">Not arrived</span>`)
-  ].join("");
-  return `<button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t} phases</div></div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button>`;
+  const lists = jobLists(job).map(c => { const s = listStatus(job, c); return `<div><b>${esc(LISTS[c].short)}</b><span class="st ${s.cls}" data-lst="${job.id}:${c}">${esc(s.text)}</span></div>`; }).join("");
+  const meta = [`<span class="pill dark">${esc(userName(job.leadId))}</span>`, ...jobServiceNames(job).map(n => `<span class="pill">${esc(n)}</span>`),
+    done ? `<span class="pill good">Done · ${fmtD(jobTotal(job))}</span>` : (job.arrivedAt ? `<span class="pill warn num">On site · <span data-live="total-${job.id}">${fmtD(jobTotal(job))}</span></span>` : `<span class="pill">Not arrived</span>`)].join("");
+  return `<button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t} phases</div></div><div class="jc-lists">${lists}</div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button>`;
 }
 function renderHome(){
   const u = me(); const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => jobLastActivity(b) - jobLastActivity(a));
   const recent = DB.jobs.filter(j => j.status === "done").sort((a,b) => b.finishedAt - a.finishedAt).slice(0,3);
-  app.innerHTML = topbar(`Hey, ${u.name.split(" ")[0]}`, `${ROLES[u.role]} · ${new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"})}`, `<button class="tbtn" data-go="settings">⚙</button>`) +
+  const ini = u.name.split(" ").map(x => x[0]).join("").slice(0,2).toUpperCase();
+  app.innerHTML = topbar("Job board", new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}), `<span class="who"><i>${esc(ini)}</i>${esc(u.name.split(" ")[0])}</span><button class="tbtn" data-go="settings">⚙</button>`) +
     `<div class="main"><div class="stack">
       <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
       ${active.length ? active.map(jobCard).join("") : `<div class="card empty">No cars on the board. Start a job when you pull up.</div>`}
       <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><button class="btn small ghost" data-go="history">History & stats</button></div>
       ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">Finished jobs show up here with their timing.</div>`}
       ${isOwner() ? `<button class="btn ghost" data-go="team">Manage team</button>` : ""}
-    </div></div>
-    <div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
+    </div></div><div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
   wireNav(); app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
-  setLive(() => DB.jobs.filter(j => j.status === "active" && j.arrivedAt).forEach(j => { const el = app.querySelector(`[data-live="total-${j.id}"]`); if (el) el.textContent = fmtD(jobTotal(j)); }));
+  setLive(() => { DB.jobs.filter(j => j.status === "active").forEach(j => { const el = app.querySelector(`[data-live="total-${j.id}"]`); if (el) el.textContent = fmtD(jobTotal(j)); jobLists(j).forEach(c => { const e = app.querySelector(`[data-lst="${j.id}:${c}"]`); if (e) { const s = listStatus(j, c); e.textContent = s.text; e.className = "st " + s.cls; } }); }); });
 }
 function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) return; if (job.status === "done") go("report", {jobId:id}); else go("job", {jobId:id, pane:0}); }
 
 // ---------- new job ----------
 function renderNewJob(){
   const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", serviceIds:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
-  const people = DB.users; const lists = listsForServices(nj.serviceIds);
-  const groups = [...new Set(SERVICES.map(s => s.group))];
+  const people = DB.users; const lists = listsForServices(nj.serviceIds); const groups = [...new Set(SERVICES.map(s => s.group))];
+  const pastClients = [...new Set(DB.jobs.map(j => j.client.trim()).filter(Boolean))].sort();
+  const vehiclesFor = client => [...new Set(DB.jobs.filter(j => !client.trim() || sameClient(j.client, client)).map(j => j.vehicle.trim()).filter(Boolean))].sort();
   app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" data-go="home">Cancel</button>`) +
    `<div class="main"><div class="stack">
     <div class="card" style="padding:14px"><div class="stack">
+      <div class="field"><label>Client name</label><input id="n_client" list="dl_clients" placeholder="Lars Letenoff" value="${esc(nj.client)}" autocomplete="off"><datalist id="dl_clients">${pastClients.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div>
+      <div class="field"><label>Vehicle</label><input id="n_vehicle" list="dl_vehicles" placeholder="Ferrari 296 GTB" value="${esc(nj.vehicle)}" autocomplete="off"><datalist id="dl_vehicles">${vehiclesFor(nj.client).map(v => `<option value="${esc(v)}">`).join("")}</datalist></div>
       <div class="field"><label>Date</label><input id="n_date" type="date" value="${nj.date}"></div>
       <div class="field"><label>Team lead</label><select id="n_lead">${people.map(p => `<option value="${p.id}" ${p.id === nj.leadId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
-      <div class="field"><label>Client name</label><input id="n_client" placeholder="Lars Letenoff" value="${esc(nj.client)}"></div>
-      <div class="field"><label>Vehicle</label><input id="n_vehicle" placeholder="Ferrari 296 GTB" value="${esc(nj.vehicle)}"></div>
       <div class="field"><label>Technicians on this car</label><div class="chips">${people.filter(p => p.id !== nj.leadId).map(p => `<button class="choice ${nj.techIds.includes(p.id) ? "on" : ""}" data-tech="${p.id}">${esc(p.name)}</button>`).join("") || `<span style="color:var(--muted);font-size:13px">No other team members yet.</span>`}</div></div>
     </div></div>
     <div class="sect-title"><h2>Services</h2><span class="pill">${lists.length} checklist${lists.length === 1 ? "" : "s"}</span></div>
-    <div class="card" style="padding:12px"><div class="stack">
-      ${groups.map(g => `<div class="eyebrow">${esc(g)}</div><div class="chips">${SERVICES.filter(s => s.group === g).map(s => `<button class="choice ${nj.serviceIds.includes(s.id) ? "on" : ""}" data-svc="${s.id}">${esc(s.name)}<small>${esc(s.price)} · ${s.lists.map(c => LISTS[c].title).join(" + ")}${s.lists.some(c => LISTS[c].generic) ? " (timed only, no SOP yet)" : ""}</small></button>`).join("")}</div>`).join("")}
-    </div></div>
-    <div class="err" id="n_err"></div>
-   </div></div>
+    <div class="card" style="padding:12px"><div class="stack">${groups.map(g => `<div class="eyebrow">${esc(g)}</div><div class="chips">${SERVICES.filter(s => s.group === g).map(s => `<button class="choice ${nj.serviceIds.includes(s.id) ? "on" : ""}" data-svc="${s.id}">${esc(s.name)}<small>${esc(s.price)} · ${s.lists.map(c => LISTS[c].title).join(" + ")}${s.lists.some(c => LISTS[c].generic) ? " (timed only, no SOP yet)" : ""}</small></button>`).join("")}</div>`).join("")}</div></div>
+    <div class="err" id="n_err"></div></div></div>
    <div class="actionbar"><button class="narrow" data-go="home">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
   wireNav();
   const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.client = $("#n_client").value; nj.vehicle = $("#n_vehicle").value; nj.leadId = $("#n_lead").value; };
+  $("#n_client").oninput = () => { readForm(); $("#dl_vehicles").innerHTML = vehiclesFor(nj.client).map(v => `<option value="${esc(v)}">`).join(""); };
   $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); renderNewJob(); };
   app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; renderNewJob(); });
   app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.svc; nj.serviceIds = nj.serviceIds.includes(id) ? nj.serviceIds.filter(x => x !== id) : [...nj.serviceIds, id]; renderNewJob(); });
@@ -775,207 +757,176 @@ function renderNewJob(){
     DB.jobs.push(job); save(); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
+function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob"); }
 
 // ---------- job runner ----------
 function renderJob(){
   const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
   const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => a.createdAt - b.createdAt);
-  const lists = jobLists(job); const p = jobProgress(job);
-  if (ui.pane >= lists.length) ui.pane = 0;
+  const lists = jobLists(job); const p = jobProgress(job); if (ui.pane >= lists.length) ui.pane = 0;
+  const crew = `${esc(job.client)} · ${fmtDate(job.date)} · ${esc(userName(job.leadId))}${job.techIds.length ? " + " + job.techIds.map(userName).map(esc).join(", ") : ""}`;
   app.innerHTML = `
-   <div class="topbar" style="padding-bottom:8px"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(job.vehicle)}</h1><div class="sub">${esc(job.client)} · ${fmtDate(job.date)} · Lead ${esc(userName(job.leadId))}${job.techIds.length ? " · " + job.techIds.map(userName).map(esc).join(", ") : ""}</div></div>
-     <button class="tbtn" data-go="home">Board</button></div></div>
-   ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)} <span class="num" style="opacity:.7">${jobProgress(j).pct}%</span></button>`).join("")}</div>` : ""}
-   <div class="jobhead"><div class="times">
-     <div class="tbox"><button id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to stamp"}</div></button></div>
-     <div class="tbox"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div>
-     <div class="tbox"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span></div></div>
-   </div></div>
+   <div class="jobtop"><div class="row"><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><div style="display:flex;gap:6px"><button class="tbtn" id="anothercar">+ Car</button><button class="tbtn" data-go="home">Board</button></div></div>
+     ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)}<small class="num">${jobProgress(j).pct}%</small></button>`).join("")}</div><div class="sub">${crew}</div>` : `<h1>${esc(job.vehicle)}</h1><div class="sub">${crew}</div>`}
+     <div class="stats"><button class="st" id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to start"}</div></button><div class="st"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div><div class="st"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:13px;color:#8E8E99">/${p.t}</span></div></div></div></div>
    <div class="main noscroll">
-     ${lists.length > 1 ? `<div class="tabs">${lists.map((c,i) => { const lp = listProgress(job,c); const pz = listPausedSince(job,c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(LISTS[c].title)}</div><div class="p num ${pz ? "paused" : ""}" data-tabp="${c}">${pz ? "❚❚ paused" : `${lp.d}/${lp.t} phases`}</div><div class="ul"></div></button>`; }).join("")}</div>` : ""}
-     <div class="panes" id="panes">${lists.map(c => renderPane(job, c)).join("")}</div>
-   </div>
-   <div class="actionbar"><button class="narrow" id="notesbtn">Notes${allNotes(job).length ? ` · ${allNotes(job).length}` : ""}</button><button class="primary" id="finish">${p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`}</button></div>`;
-  wireNav();
+     ${lists.length > 1 ? `<div class="tabs">${lists.map((c,i) => { const lp = listProgress(job,c); const pz = listPausedSince(job,c); return `<button class="tab ${i === ui.pane ? "on" : ""}" data-pane="${i}"><div class="t">${esc(LISTS[c].short)}</div><div class="p num ${pz ? "paused" : ""}">${pz ? "❚❚ paused" : `${lp.d}/${lp.t}`}</div><div class="ul"></div></button>`; }).join("")}</div>` : ""}
+     <div class="panes" id="panes">${lists.map(c => renderPane(job, c)).join("")}</div></div>
+   <div class="actionbar"><button class="narrow" id="notesbtn">Notes${allNotes(job).length ? ` · ${allNotes(job).length}` : ""}</button><button class="${p.d === p.t ? "primary" : ""}" id="finish">${p.d === p.t ? "Finish job" : `Finish · ${p.t - p.d} left`}</button></div>`;
+  wireNav(); requestWake();
+  $("#anothercar").onclick = () => anotherCar(job);
   app.querySelectorAll("[data-switch]").forEach(b => b.onclick = () => go("job", {jobId:b.dataset.switch, pane:0}));
-  const panes = $("#panes");
-  panes.scrollLeft = ui.pane * panes.clientWidth;
+  const panes = $("#panes"); panes.scrollLeft = ui.pane * panes.clientWidth;
   app.querySelectorAll("[data-pane]").forEach(b => b.onclick = () => { ui.pane = +b.dataset.pane; syncTabs(); panes.scrollTo({left: ui.pane * panes.clientWidth, behavior:"smooth"}); });
   let raf = 0; panes.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }); });
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
   $("#arrive").onclick = () => {
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); save(); toast("Arrival stamped " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client} — marked` : " · all checklists running")); renderJob(); return; }
-    const v = prompt("Arrival time is " + fmtT(job.arrivedAt) + ".\nEnter a corrected time (e.g. 7:05 am) or leave blank to keep it:");
-    if (v == null || !v.trim()) return; const ts = setTimeOfDay(job.arrivedAt, v); if (!ts) { toast("Couldn't read that time"); return; }
-    const old = job.arrivedAt; job.arrivedAt = ts;
-    jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job);
-    save(); renderJob();
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); save(); toast("Started " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client}` : " · all checklists running")); renderJob(); return; }
+    timeSheet({ title:"Arrival time", ts:job.arrivedAt, hint:"Every checklist's clock starts here.", onSave: ts => { const old = job.arrivedAt; job.arrivedAt = ts; jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job); save(); renderJob(); } });
   };
   panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
   $("#notesbtn").onclick = () => openNotes(job);
   $("#finish").onclick = () => finishJob(job);
   setLive(() => {
     const el = app.querySelector('[data-live="total"]'); if (el) el.textContent = fmtD(jobTotal(job));
-    app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running) e.textContent = fmtD(s.elapsed); });
-    app.querySelectorAll("[data-live-clock]").forEach(e => { const code = e.dataset.liveClock; const pz = listPausedSince(job, code); e.textContent = pz ? `paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + pz.reason : ""}` : `${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · paused " + fmtD(listPausedTotal(job, code)) + " total" : ""}`; });
+    app.querySelectorAll("[data-live-ph]").forEach(e => { const [code, pi] = e.dataset.livePh.split(":"); const s = phaseStats(job, code)[+pi]; if (s.running) { e.textContent = fmtD(s.elapsed); e.parentElement.classList.toggle("over", s.over); } });
+    app.querySelectorAll("[data-live-clock]").forEach(e => { const code = e.dataset.liveClock; const pz = listPausedSince(job, code); e.textContent = pz ? `paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + pz.reason : ""}` : `${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · " + fmtD(listPausedTotal(job, code)) + " paused" : ""}`; });
   });
   if (ui.sheet === "notes") openNotes(job);
 }
 function renderPane(job, code){
   const S = LISTS[code]; const st = phaseStats(job, code); const L = job.lists[code]; const lp = listProgress(job, code);
+  const pz = listPausedSince(job, code); const running = listRunning(job, code);
+  const clock = !job.arrivedAt ? `<div class="clockline idle"><div class="cl"><b>Clock</b>starts when you tap Arrived</div></div>`
+    : job.finishedAt ? "" : pz ? `<div class="clockline paused"><div class="cl"><b>❚❚ Paused</b><span data-live-clock="${code}">paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + esc(pz.reason) : ""}</span></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`
+    : running ? `<div class="clockline running"><div class="cl"><b>● Running</b><span data-live-clock="${code}">${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · " + fmtD(listPausedTotal(job, code)) + " paused" : ""}</span></div><button class="btn small" data-pause="${code}">Pause</button></div>`
+    : `<div class="clockline idle"><div class="cl"><b>Clock stopped</b></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`;
   return `<div class="pane" data-code="${code}">
-   <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases<small>${fmtD(listSpan(job, code))} active</small></div></div>
-   ${(() => { const pz = listPausedSince(job, code); const running = listRunning(job, code);
-      if (!job.arrivedAt) return `<div class="clock idle"><div class="cl"><b>Clock not started</b><small>Starts when you tap Arrived</small></div></div>`;
-      if (job.finishedAt) return "";
-      if (pz) return `<div class="clock paused"><div class="cl"><b>❚❚ Paused</b><small data-live-clock="${code}">paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + pz.reason : ""}</small></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`;
-      if (running) return `<div class="clock running"><div class="cl"><b>● Running</b><small data-live-clock="${code}">${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · paused " + fmtD(listPausedTotal(job, code)) + " total" : ""}</small></div><button class="btn small" data-pause="${code}">Pause</button></div>`;
-      return `<div class="clock idle"><div class="cl"><b>Clock stopped</b><small>Tap Resume when work on this checklist starts</small></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`; })()}
-   ${S.phases.map((ph, pi) => { const s = st[pi]; const cur = !s.complete && st.findIndex(x => !x.complete) === pi; const pz = listPausedSince(job, code);
-     const right = s.complete ? `<div class="d done num">${fmtD(s.duration)}</div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}</div>`
-       : s.running ? `<div class="d live num" data-live-ph="${code}:${pi}">${fmtD(s.elapsed)}</div><div class="w">${pz ? "paused" : "in progress"}</div>`
-       : `<div class="d idle">—</div><div class="w">${cur ? "waiting on arrival" : "up next"}</div>`;
-     return `<div class="phase ${s.complete ? "done" : ""} ${cur ? "current" : ""}"><div class="band"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${esc(ph[2])}${pi === 0 && hasSharedSetup(code) ? " · shared: one mark covers this client's other cars on the board" : ""}</small></div><div class="r">${right}</div></div>
-       ${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
-       <div class="steps">${ph[3].map((txt, ii) => { const k = pi+"_"+ii; const fl = L.flags[k];
-         return `<div class="step"><div class="dot"></div><div class="txt">${esc(txt)}${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div><button class="nb ${fl ? "has" : ""}" data-flag="${code}:${k}">${fl ? "edit" : "note"}</button></div>`; }).join("")}</div>
-       <button class="phasebtn ${s.complete ? "donebtn" : (cur ? "ready" : "")}" data-phase="${code}:${pi}">${s.complete ? `✓ Done ${fmtT(s.endAt)} · tap to change` : `Mark ${esc(ph[0].toLowerCase().replace("phase ", "Phase "))} complete`}</button>
-     </div>`; }).join("")}
+   <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases · ${fmtD(listSpan(job, code))}</div></div>
+   ${clock}
+   ${S.phases.map((ph, pi) => { const s = st[pi]; const key = code + ":" + pi; const open = ui.open.has(key) || (s.current && !ui.closed.has(key));
+     const tgt = s.target ? ` / ~${s.target}m` : "";
+     const right = s.complete ? `<div class="d done num ${s.over ? "over" : ""}">${fmtD(s.duration)}<span style="font-size:12px;font-weight:600;opacity:.75">${tgt}</span></div><div class="w num">${fmtT(s.startAt)} → ${fmtT(s.endAt)}${s.over ? " · ran long" : ""}</div>`
+       : s.running ? `<div class="d live num ${s.over ? "over" : ""}"><span data-live-ph="${code}:${pi}">${fmtD(s.elapsed)}</span><span style="font-size:12px;font-weight:600;opacity:.75">${tgt}</span></div><div class="w">${pz ? "paused" : "in progress"}</div>`
+       : `<div class="d idle">—</div><div class="w">${s.current ? "waiting on arrival" : (s.target ? `~${s.target} min` : "up next")}</div>`;
+     const hasNotes = Object.keys(L.flags).some(k => k.startsWith(pi + "_"));
+     const body = open ? `${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
+       <div class="steps">${ph[3].map((txt, ii) => { const fl = L.flags[pi+"_"+ii]; return `<div class="step"><div class="dot"></div><div class="txt">${esc(txt)}${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div></div>`; }).join("")}${L.flags[pi+"_g"] ? `<div class="flag">⚑ ${esc(L.flags[pi+"_g"])}</div>` : ""}</div>
+       <div class="phasefoot"><button class="notebtn ${hasNotes ? "has" : ""}" data-note="${code}:${pi}">${hasNotes ? "⚑ Notes" : "＋ Note / flag"}</button><button class="phasebtn ${s.complete ? "" : (s.current ? "" : "wait")}" data-phase="${code}:${pi}">${s.complete ? `✓ Done ${fmtT(s.endAt)} · change` : `${esc(ph[0].replace("PHASE ", "Phase "))} done ✓`}</button></div>` : "";
+     return `<div class="phase ${s.complete ? "done" : ""} ${s.current ? "current" : ""}"><button class="band" data-toggle="${key}"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${open ? esc(ph[2]) + (pi === 0 && hasSharedSetup(code) ? " · shared with this client's other cars" : "") : `${ph[3].length} step${ph[3].length === 1 ? "" : "s"}${hasNotes ? " · ⚑ notes" : ""}`}</small></div><div class="r">${right}</div><div class="chev">${open ? "▾" : "▸"}</div></button>${body}</div>`; }).join("")}
    ${S.footer ? `<div class="hint">➜ ${esc(S.footer)}</div>` : ""}
-   <div class="listnotes"><label>${esc(S.title)} notes</label><textarea data-lnotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(L.notes)}</textarea></div>
-  </div>`;
+   <div class="listnotes"><label>${esc(S.title)} notes</label><textarea data-lnotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(L.notes)}</textarea></div></div>`;
 }
 function refreshPane(job, code){
-  const panes = $("#panes"); const old = panes.querySelector(`.pane[data-code="${code}"]`); const top = old.scrollTop;
-  const tmp = document.createElement("div"); tmp.innerHTML = renderPane(job, code); const fresh = tmp.firstElementChild;
-  old.replaceWith(fresh); fresh.scrollTop = top; panes.scrollLeft = ui.pane * panes.clientWidth;
+  const panes = $("#panes"); const old = panes.querySelector(`.pane[data-code="${code}"]`); if (!old) return; const top = old.scrollTop;
+  const tmp = document.createElement("div"); tmp.innerHTML = renderPane(job, code); const fresh = tmp.firstElementChild; old.replaceWith(fresh); fresh.scrollTop = top; panes.scrollLeft = ui.pane * panes.clientWidth;
   const p = jobProgress(job); const lists = jobLists(job);
-  app.querySelectorAll("[data-pane]").forEach(b => { const c = lists[+b.dataset.pane]; const lp = listProgress(job,c); const pz = listPausedSince(job,c); const el = b.querySelector(".p"); el.textContent = pz ? "❚❚ paused" : `${lp.d}/${lp.t} phases`; el.classList.toggle("paused", !!pz); });
-  $("#prog").innerHTML = `${p.d}<span style="font-size:14px;color:#8E8E99">/${p.t}</span>`;
-  $("#finish").textContent = p.d === p.t ? "Finish job" : `Finish job · ${p.t - p.d} left`;
+  app.querySelectorAll("[data-pane]").forEach(b => { const c = lists[+b.dataset.pane]; const lp = listProgress(job,c); const pz = listPausedSince(job,c); const el = b.querySelector(".p"); el.textContent = pz ? "❚❚ paused" : `${lp.d}/${lp.t}`; el.classList.toggle("paused", !!pz); });
+  $("#prog").innerHTML = `${p.d}<span style="font-size:13px;color:#8E8E99">/${p.t}</span>`;
+  const fb = $("#finish"); fb.textContent = p.d === p.t ? "Finish job" : `Finish · ${p.t - p.d} left`; fb.classList.toggle("primary", p.d === p.t);
   $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : "");
   const arr = $("#arrive .v"); if (arr && job.arrivedAt) { arr.textContent = fmtT(job.arrivedAt); arr.classList.remove("red"); }
   wirePane(job, fresh);
 }
 function wirePane(job, pane){
+  pane.querySelectorAll("[data-toggle]").forEach(el => el.onclick = () => { const key = el.dataset.toggle; const [code, pi] = key.split(":"); const s = phaseStats(job, code)[+pi]; const open = ui.open.has(key) || (s.current && !ui.closed.has(key)); if (open) { ui.open.delete(key); if (s.current) ui.closed.add(key); } else { ui.open.add(key); ui.closed.delete(key); } refreshPane(job, code); });
   pane.querySelectorAll("[data-phase]").forEach(el => el.onclick = () => {
     const [code, pi] = el.dataset.phase.split(":"); const L = job.lists[code]; const ph = LISTS[code].phases[+pi];
-    if (L.phases[pi]) {
-      const v = prompt(`${ph[0]} was marked done at ${fmtT(L.phases[pi])}.\nEnter the real completion time (e.g. 7:20 am), or type "undo" to clear it:`);
-      if (v == null || !v.trim()) return;
-      if (/^undo$/i.test(v.trim())) { delete L.phases[pi]; save(); refreshPane(job, code); return; }
-      const ts = setTimeOfDay(L.phases[pi], v); if (!ts) { toast("Couldn't read that time"); return; }
-      L.phases[pi] = ts; save(); refreshPane(job, code); return;
-    }
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Arrival auto-stamped " + fmtT(job.arrivedAt)); }
-    const ts = Date.now(); L.phases[pi] = ts;
-    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); save(); jobLists(job).forEach(c => refreshPane(job, c)); }
-    else { save(); refreshPane(job, code); }
+    if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; save(); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); save(); refreshPane(job, code); } }); return; }
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
+    const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
+    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); save(); jobLists(job).forEach(c => refreshPane(job, c)); } else { save(); refreshPane(job, code); }
     const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
   });
+  pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
   pane.querySelectorAll("[data-resume]").forEach(el => el.onclick = () => { resumeList(job, el.dataset.resume); save(); toast(LISTS[el.dataset.resume].title + " running"); refreshPane(job, el.dataset.resume); });
-  pane.querySelectorAll("[data-flag]").forEach(el => el.onclick = () => {
-    const [code, k] = el.dataset.flag.split(":"); const L = job.lists[code];
-    const v = prompt("Note on this step (issue found, redo, upcharge, etc.). Leave blank to remove:", L.flags[k] || "");
-    if (v == null) return; if (v.trim()) L.flags[k] = v.trim(); else delete L.flags[k]; save(); refreshPane(job, code);
-  });
   pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : ""); });
+}
+function phaseNoteSheet(job, code, pi){
+  const ph = LISTS[code].phases[pi]; const L = job.lists[code];
+  const s = openSheet(`${esc(ph[0])} · note or flag`, `<div class="notegroup"><h3>What is it about?</h3><div class="reasons">
+    <button data-k="${pi}_g">This phase in general${L.flags[pi+"_g"] ? `<small>⚑ ${esc(L.flags[pi+"_g"])}</small>` : `<small>e.g. "come back to this spot later", "client asked for…"</small>`}</button>
+    ${ph[3].map((txt, ii) => `<button data-k="${pi}_${ii}">${esc(txt)}${L.flags[pi+"_"+ii] ? `<small>⚑ ${esc(L.flags[pi+"_"+ii])}</small>` : ""}</button>`).join("")}</div></div>`);
+  s.el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const k = b.dataset.k; s.close(); textSheet({ title:"Note", label: k.endsWith("_g") ? `<em>${esc(ph[0])}</em> · general` : "Step", value:L.flags[k] || "", placeholder:"Anything worth remembering — a reminder, an issue, a client request…", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; save(); refreshPane(job, code); } }); });
 }
 const PAUSE_REASONS = ["Both of us on the other checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
 function openPause(job, code){
-  const old = $("#sheet"); if (old) old.remove();
-  const html = `<div class="sheetwrap" id="sheet"><div class="sheet">
-    <div class="sh"><h2>Pause · ${esc(LISTS[code].title)}</h2><button class="btn small" id="sheetclose">Cancel</button></div>
-    <div class="sb"><div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div>
-    <div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div></div></div></div>`;
-  document.body.insertAdjacentHTML("beforeend", html);
-  const sheet = $("#sheet"); const close = () => sheet.remove();
-  $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
-  sheet.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => {
-    let reason = b.dataset.reason;
-    if (reason === "__other") { const v = prompt("Why is this checklist paused?"); if (v == null || !v.trim()) return; reason = v.trim(); }
-    pauseList(job, code, reason); save(); close(); toast(LISTS[code].title + " paused"); refreshPane(job, code);
-  });
+  const s = openSheet(`Pause · ${esc(LISTS[code].title)}`, `<div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div><div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div>`);
+  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); save(); toast(LISTS[code].title + " paused"); refreshPane(job, code); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
 }
 function openNotes(job){
-  ui.sheet = "notes";
-  const old = $("#sheet"); if (old) old.remove();
-  const notes = allNotes(job).filter(n => n.kind === "step");
-  const lists = jobLists(job);
-  const html = `<div class="sheetwrap" id="sheet"><div class="sheet">
-    <div class="sh"><h2>Notes · ${esc(job.vehicle)}</h2><button class="btn small" id="sheetclose">Done</button></div>
-    <div class="sb">
-      <div class="notegroup"><h3><em>Job</em> notes</h3><textarea id="jobnotes" placeholder="Client requests, issues, where the key went, anything Sam should know…">${esc(job.notes)}</textarea></div>
-      <div class="notegroup"><h3><em>Flagged</em> steps</h3>${notes.length ? notes.map(n => `<div class="noteline"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}<small>${esc(n.step)}</small></div><button data-editflag="${n.code}:${n.k}">edit</button></div>`).join("") : `<div class="noteline"><div class="t" style="color:var(--muted)">Nothing flagged. Use "note" on any step to flag it.</div></div>`}</div>
-      ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}
-    </div></div></div>`;
-  document.body.insertAdjacentHTML("beforeend", html);
-  const sheet = $("#sheet");
-  const close = () => { ui.sheet = false; sheet.remove(); renderJob(); };
-  $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
+  ui.sheet = "notes"; const notes = allNotes(job).filter(n => n.kind === "step"); const lists = jobLists(job);
+  const s = openSheet(`Notes · ${esc(job.vehicle)}`, `<div class="notegroup"><h3><em>Job</em> notes</h3><textarea id="jobnotes" placeholder="Client requests, issues, where the key went, anything Sam should know…">${esc(job.notes)}</textarea></div>
+      <div class="notegroup"><h3><em>Phase</em> notes & flags</h3>${notes.length ? notes.map(n => `<div class="noteline"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}<small>${esc(n.step)}</small></div><button data-editflag="${n.code}:${n.k}">edit</button></div>`).join("") : `<div class="noteline"><div class="t" style="color:var(--muted)">Nothing yet. Use "Note / flag" on any phase.</div></div>`}</div>
+      ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}`, { closeLabel:"Done", onClose: () => { ui.sheet = false; renderJob(); } });
   $("#jobnotes").oninput = e => { job.notes = e.target.value; save(); };
-  sheet.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; save(); });
-  sheet.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; const v = prompt("Edit note (blank removes it):", L.flags[k] || ""); if (v == null) return; if (v.trim()) L.flags[k] = v.trim(); else delete L.flags[k]; save(); openNotes(job); });
+  s.el.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; save(); });
+  s.el.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; ui.sheet = false; textSheet({ title:"Edit note", value:L.flags[k] || "", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; save(); openNotes(job); } }); });
 }
 function finishJob(job){
   const p = jobProgress(job);
-  if (p.d < p.t) {
-    const v = prompt(`${p.t - p.d} phase(s) are not marked complete. Every phase should be done before signing off.\n\nTo finish anyway, write why (this goes on the report):`);
-    if (v == null || !v.trim()) return; job.finishNote = v.trim();
-  }
-  if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
-  job.finishedAt = Date.now(); job.status = "done";
-  jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
-  save(); toast("Signed off · " + fmtD(jobTotal(job)));
-  go("report", {jobId: job.id});
+  const done = () => {
+    if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
+    job.finishedAt = Date.now(); job.status = "done"; jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
+    save(); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id});
+    const n = DB.jobs.filter(j => j.status === "done").length; if (n > 0 && n % 5 === 0 && DB.nudged !== n) { DB.nudged = n; save(); setTimeout(() => confirmSheet({ title:"Back up your data", text:`${n} jobs finished on this phone. Everything lives here until the sync exists — take 10 seconds to export a backup.`, ok:"Export backup now", onOk: exportBackup }), 600); }
+  };
+  if (p.d < p.t) textSheet({ title:"Finish with open phases?", label:`<em>${p.t - p.d}</em> phase${p.t - p.d === 1 ? "" : "s"} not marked`, placeholder:"Why is the job being closed early? (goes on the report)", saveLabel:"Finish anyway", onSave: v => { job.finishNote = v; done(); } });
+  else done();
 }
 
 // ---------- report ----------
+function timelineBar(job, code){
+  const st = phaseStats(job, code); const pauses = listPauses(job, code); const segs = [];
+  st.forEach((s, pi) => { if (s.complete && s.duration != null) segs.push({ cls:"p" + (pi % 2) + (s.over ? " ov" : ""), ms:s.duration, label:LISTS[code].phases[pi][0].replace(/PHASE /, "") }); pausesInPhase(pauses, st, pi).forEach(p => segs.push({ cls:"pz", ms:p.ms, label:"❚❚" })); });
+  pausesInPhase(pauses, st, -1).forEach(p => segs.push({ cls:"pz", ms:p.ms, label:"❚❚" }));
+  const total = segs.reduce((a,s) => a + s.ms, 0); if (!total) return "";
+  return `<div class="tl">${segs.map(s => `<i class="${s.cls}" style="flex:${Math.max(s.ms, total*0.004)} 0 0" title="${esc(s.label)} · ${fmtD(s.ms)}"><span>${s.ms/total > 0.045 ? esc(s.label) : ""}</span></i>`).join("")}</div><div class="tlkey"><span><i style="background:#3A3A42"></i>phases</span><span><i style="background:var(--warn)"></i>paused</span><span><i style="background:#3A3A42;box-shadow:inset 0 -4px 0 var(--red)"></i>ran long</span></div>`;
+}
 function renderReport(){
   const job = DB.jobs.find(j => j.id === ui.jobId); if (!job) return go("home");
-  const notes = allNotes(job);
+  const notes = allNotes(job); const ov = overruns(job);
   const rows = jobLists(job).map(code => {
     const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code); const pauses = listPauses(job, code); const pt = listPausedTotal(job, code);
-    return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listActiveTotal(job, code))} active${pt ? `<span class="pill warn" style="margin-left:6px">paused ${fmtD(pt)}</span>` : ""}</div></div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Phase</th><th class="r">Start → done</th><th class="r">Active</th></tr></thead><tbody>
-     ${S.phases.map((ph, pi) => { const s = st[pi]; const inPhase = pausesInPhase(pauses, st, pi);
-       return `<tr class="${s.complete ? "" : "miss"}"><td><em>${esc(ph[0])}</em>${esc(ph[1])}</td><td class="r num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "not done"}</td><td class="r num">${s.complete ? fmtD(s.duration) : "—"}</td></tr>` +
-         inPhase.map(p => `<tr class="pause"><td><span class="pill warn">❚❚ paused ${fmtD(p.ms)}</span> <span style="color:var(--warn)">${esc(p.reason || "no reason given")}</span></td><td class="r num" style="color:var(--warn)">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</td><td class="r num" style="color:var(--warn)">−${fmtD(p.ms)}</td></tr>`).join(""); }).join("")}</tbody></table></div>
-     ${pausesInPhase(pauses, st, -1).length ? `<div class="note" style="color:var(--warn)">${pausesInPhase(pauses, st, -1).map(p => `❚❚ Paused after the last phase ${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)} (${fmtD(p.ms)}): ${esc(p.reason || "no reason given")}`).join("<br>")}</div>` : ""}</div>`;
+    return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listActiveTotal(job, code))} active${pt ? `<br><span class="pill warn">paused ${fmtD(pt)}</span>` : ""}</div></div>
+     ${timelineBar(job, code)}
+     ${S.phases.map((ph, pi) => { const s = st[pi]; return `<div class="prow ${s.complete ? "" : "miss"} ${s.over ? "over" : ""}"><div class="n"><b><em>${esc(ph[0])}</em>${esc(ph[1])}</b><small class="num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "✗ not done"}${s.target ? ` · target ~${s.target} min` : ""}</small></div><div class="r num">${s.complete ? fmtD(s.duration) : "—"}${s.over ? `<small>ran long</small>` : ""}</div></div>` +
+       pausesInPhase(pauses, st, pi).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join(""); }).join("")}
+     ${pausesInPhase(pauses, st, -1).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused after the last phase · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join("")}</div>`;
   }).join("");
   app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="report stack">
      <div class="head"><h2>${esc(job.vehicle)}</h2><div class="sub">${esc(job.client)} · ${fmtDate(job.date)}</div>
        <div class="kv num"><b>Service</b><span>${jobServiceNames(job).map(esc).join(" + ")}</span><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>On site</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
        ${job.finishNote ? `<div class="flag" style="margin-top:10px">⚑ Finished with open phases: ${esc(job.finishNote)}</div>` : ""}</div>
+     ${ov.length ? `<div class="card"><div class="lt"><h3>Ran long</h3><div class="d num">${ov.length}</div></div>${ov.map(o => `<div class="prow over"><div class="n"><b><em>${esc(o.ph[0])}</em>${esc(LISTS[o.code].title)} · ${esc(o.ph[1])}</b><small>target ~${o.s.target} min</small></div><div class="r num">${fmtD(o.s.duration)}</div></div>`).join("")}</div>` : ""}
      <div class="card"><div class="lt"><h3>Notes</h3><div class="d num">${notes.length}</div></div>${notes.length ? notes.map(n => `<div class="noteline" style="padding:8px 12px"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}${n.step ? `<small>${esc(n.step)}</small>` : ""}</div></div>`).join("") : `<div class="note" style="color:var(--muted)">No notes on this job.</div>`}</div>
      ${rows}
      ${job.status === "active" ? `<button class="btn ghost" id="backtojob">Back to checklists</button>` : ""}
      <button class="btn ghost" id="copyfull">Copy full phase timing as text</button>
      ${job.status === "done" && isOwner() ? `<button class="btn ghost danger" id="deljob">Delete this job</button>` : ""}
-   </div></div>
-   <div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share summary</button></div>`;
-  wireNav();
-  const text = summaryText(job);
+   </div></div><div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share summary</button></div>`;
+  wireNav(); const text = summaryText(job);
   $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title:`3X Job — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
-  $("#copy").onclick = () => copyText(text);
-  $("#copyfull").onclick = () => copyText(fullText(job));
+  $("#copy").onclick = () => copyText(text); $("#copyfull").onclick = () => copyText(fullText(job));
   const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
-  const d = $("#deljob"); if (d) d.onclick = () => { if (confirm("Delete this job and its timing permanently?")) { DB.jobs = DB.jobs.filter(j => j.id !== job.id); save(); go("history"); } };
+  const d = $("#deljob"); if (d) d.onclick = () => confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed from this phone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { DB.jobs = DB.jobs.filter(j => j.id !== job.id); save(); go("history"); } });
 }
-async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ prompt("Copy this:", t); } }
+async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ textSheet({ title:"Copy this", value:t, saveLabel:"Done", allowEmpty:true, onSave: () => {} }); } }
 
 // ---------- history & stats ----------
 function renderHistory(){
   const u = me(); const mine = ui.histFilter === "mine";
   const done = DB.jobs.filter(j => j.status === "done" && (!mine || j.leadId === u.id || j.techIds.includes(u.id))).sort((a,b) => b.finishedAt - a.finishedAt);
-  const timed = done.filter(j => jobTotal(j) != null);
-  const avg = timed.length ? timed.reduce((a,j) => a + jobTotal(j), 0)/timed.length : null;
+  const timed = done.filter(j => jobTotal(j) != null); const avg = timed.length ? timed.reduce((a,j) => a + jobTotal(j), 0)/timed.length : null;
   const fastest = timed.length ? timed.reduce((a,j) => jobTotal(j) < jobTotal(a) ? j : a) : null;
   const byList = {}; done.forEach(j => jobLists(j).forEach(c => { const s = listSpan(j, c); if (s != null && listProgress(j,c).d === listProgress(j,c).t) (byList[c] = byList[c] || []).push({ job:j, ms:s }); }));
-  const det = ui.histDetail;
+  const byClient = {}; timed.forEach(j => { const k = normName(j.client).split(" ")[0]; (byClient[k] = byClient[k] || { name:j.client, jobs:[] }).jobs.push(j); });
+  const byLead = {}; timed.forEach(j => (byLead[j.leadId] = byLead[j.leadId] || []).push(j));
+  const det = ui.histDetail; const avgOf = a => a.length ? a.reduce((x,j) => x + jobTotal(j), 0)/a.length : null;
   const jobLine = (j, ms) => `<button class="rowitem" data-job="${j.id}"><div><div class="n">${esc(j.vehicle)} <span class="s">· ${esc(j.client)}</span></div><div class="s">${fmtDate(j.date)} · ${fmtT(j.arrivedAt)} → ${fmtT(j.finishedAt)} · lead ${esc(userName(j.leadId))}</div></div><div class="big num">${fmtD(ms)}</div></button>`;
+  const groupRows = (title, entries, prefix) => entries.length ? `<div class="sect-title"><h2>${title}</h2></div><div class="card">${entries.map(([k, v]) => { const key = prefix + k; return `<button class="rowitem" data-det="${esc(key)}" style="${det === key ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(v.name)}</div><div class="s">${v.jobs.length} job${v.jobs.length === 1 ? "" : "s"} · tap for details</div></div><div class="big num">${fmtD(avgOf(v.jobs))} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>${det === key ? `<div style="background:var(--surface-2)">${v.jobs.map(j => jobLine(j, jobTotal(j))).join("")}</div>` : ""}`; }).join("")}</div>` : "";
   let detail = "";
   if (det === "jobs") detail = `<div class="card">${done.map(j => jobLine(j, jobTotal(j))).join("") || `<div class="empty">Nothing yet.</div>`}</div>`;
   else if (det === "avg") detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px;display:flex;justify-content:space-between"><b>How the average is built</b><span class="s">${timed.length} jobs · ${fmtD(avg)} avg</span></div>${timed.map(j => jobLine(j, jobTotal(j))).join("")}</div>`;
@@ -986,89 +937,56 @@ function renderHistory(){
      <div class="seg"><button class="${!mine ? "on" : ""}" data-f="all">Whole team</button><button class="${mine ? "on" : ""}" data-f="mine">My jobs</button></div>
      <div class="statrow"><button class="stat ${det === "jobs" ? "on" : ""}" data-det="jobs"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></button><button class="stat ${det === "avg" ? "on" : ""}" data-det="avg"><div class="v num">${fmtD(avg)}</div><div class="k">Avg time on site</div></button><button class="stat ${det === "fastest" ? "on" : ""}" data-det="fastest"><div class="v num">${fastest ? fmtD(jobTotal(fastest)) : "—"}</div><div class="k">Fastest job${fastest ? " · " + esc(fastest.vehicle) : ""}</div></button></div>
      ${detail}
-     ${Object.keys(byList).length ? `<div class="sect-title"><h2>By checklist</h2><span class="s" style="color:var(--muted);font-size:12px">active time, pauses excluded</span></div><div class="card">${LIST_ORDER.filter(c => byList[c]).map(c => { const a = byList[c]; return `<button class="rowitem ${det === "list:"+c ? "on" : ""}" data-det="list:${c}" style="${det === "list:"+c ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(LISTS[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"} · tap to see each one</div></div><div class="big num">${fmtD(a.reduce((x,y) => x+y.ms, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>`; }).join("")}</div>` : ""}
-     <div class="sect-title"><h2>All finished jobs</h2></div>
-     ${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
+     ${Object.keys(byList).length ? `<div class="sect-title"><h2>By checklist</h2><span class="s" style="color:var(--muted);font-size:12px">active time, pauses excluded</span></div><div class="card">${LIST_ORDER.filter(c => byList[c]).map(c => { const a = byList[c]; return `<button class="rowitem" data-det="list:${c}" style="${det === "list:"+c ? "background:var(--surface-2)" : ""}"><div><div class="n">${esc(LISTS[c].title)}</div><div class="s">${a.length} run${a.length === 1 ? "" : "s"} · tap to see each one</div></div><div class="big num">${fmtD(a.reduce((x,y) => x+y.ms, 0)/a.length)} <span class="s" style="font-family:'Barlow';font-size:12px;font-weight:500">avg</span></div></button>`; }).join("")}</div>` : ""}
+     ${groupRows("By client", Object.entries(byClient).sort((a,b) => b[1].jobs.length - a[1].jobs.length), "client:")}
+     ${groupRows("By team lead", Object.entries(byLead).map(([id, jobs]) => [id, { name:userName(id), jobs }]).sort((a,b) => b[1].jobs.length - a[1].jobs.length), "lead:")}
+     <div class="sect-title"><h2>All finished jobs</h2></div>${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
    </div></div>`;
-  wireNav();
-  app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; ui.histDetail = null; renderHistory(); });
+  wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; ui.histDetail = null; renderHistory(); });
   app.querySelectorAll("[data-det]").forEach(b => b.onclick = () => { ui.histDetail = ui.histDetail === b.dataset.det ? null : b.dataset.det; renderHistory(); });
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
 }
 
 // ---------- team ----------
 function renderTeam(){
-  if (!isOwner()) return go("home");
-  const ed = ui.editUser;
+  if (!isOwner()) return go("home"); const ed = ui.editUser;
+  const stats = u => { const led = DB.jobs.filter(j => j.status === "done" && j.leadId === u.id && jobTotal(j) != null); const worked = DB.jobs.filter(j => j.status === "done" && j.techIds.includes(u.id)).length; const avg = led.length ? led.reduce((a,j) => a + jobTotal(j), 0)/led.length : null; return `${led.length} led${worked ? ` · ${worked} as tech` : ""}${avg ? ` · ${fmtD(avg)} avg` : ""}`; };
   app.innerHTML = topbar("Team", "Everyone who signs in on the job", `<button class="tbtn" data-go="home">Board</button>`) +
-   `<div class="main"><div class="stack">
-     <div class="card">${DB.users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${DB.jobs.filter(j => j.status === "done" && (j.leadId === u.id || j.techIds.includes(u.id))).length} jobs</div></div>
-        <div style="display:flex;gap:6px"><button class="btn small ghost" data-edit="${u.id}">Edit</button><button class="btn small ghost" data-pw="${u.id}">Reset PW</button>${u.role !== "owner" ? `<button class="btn small ghost danger" data-rm="${u.id}">Remove</button>` : ""}</div></div>
-        ${ed === u.id ? `<div class="editrow"><div class="stack">
-          <div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div>
-          <div class="field"><label>Username</label><input id="e_user" autocapitalize="none" value="${esc(u.username)}"></div>
-          <div class="err" id="e_err"></div>
-          <div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_cancel">Cancel</button></div>
-        </div></div>` : ""}`).join("")}</div>
+   `<div class="main"><div class="stack"><div class="card">${DB.users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${stats(u)}</div></div><button class="btn small ghost" data-edit="${u.id}">${ed === u.id ? "Close" : "Edit"}</button></div>
+        ${ed === u.id ? `<div class="editrow"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div><div class="field"><label>Username</label><input id="e_user" autocapitalize="none" value="${esc(u.username)}"></div><div class="err" id="e_err"></div><div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_pw">Reset password</button></div>${u.role !== "owner" ? `<button class="btn ghost danger" id="e_rm">Remove ${esc(u.name.split(" ")[0])} from the team</button>` : ""}</div></div>` : ""}`).join("")}</div>
      <div class="sect-title"><h2>Add a team member</h2></div>
-     <div class="card" style="padding:14px"><div class="stack">
-       <div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div>
-       <div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="4+ characters"></div></div>
-       <div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button>
-     </div></div>
-     <div class="hint">Accounts live on this phone only. Add the same people on each phone that runs the board.</div>
-   </div></div>`;
-  wireNav();
-  app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; renderTeam(); });
-  if (ed) {
-    const u = DB.users.find(x => x.id === ed);
-    $("#e_cancel").onclick = () => { ui.editUser = null; renderTeam(); };
-    $("#e_save").onclick = () => {
-      const name = $("#e_name").value.trim(), user = $("#e_user").value.trim().toLowerCase(), role = $("#e_role").value;
-      if (!name || !user) { $("#e_err").textContent = "Name and username are required."; return; }
-      if (DB.users.some(x => x.username === user && x.id !== u.id)) { $("#e_err").textContent = "That username is taken."; return; }
-      u.name = name; u.username = user; if (u.role !== "owner") u.role = role; save(); ui.editUser = null; toast("Saved"); renderTeam();
-    };
-  }
-  $("#t_add").onclick = async () => {
-    const name = $("#t_name").value.trim(), user = $("#t_user").value.trim().toLowerCase(), pw = $("#t_pw").value, role = $("#t_role").value;
-    if (!name || !user || pw.length < 4) { $("#t_err").textContent = "Name, username and a 4+ character password are required."; return; }
-    if (DB.users.some(u => u.username === user)) { $("#t_err").textContent = "That username is taken."; return; }
-    const salt = uid(); DB.users.push({ id:uid(), name, username:user, role, salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); save(); toast(name + " added"); renderTeam();
-  };
-  app.querySelectorAll("[data-pw]").forEach(b => b.onclick = async () => { const u = DB.users.find(x => x.id === b.dataset.pw); const pw = prompt("New password for " + u.name + ":"); if (!pw || pw.length < 4) return; u.salt = uid(); u.hash = await hashPw(pw, u.salt); save(); toast("Password reset"); });
-  app.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { const u = DB.users.find(x => x.id === b.dataset.rm); if (confirm("Remove " + u.name + "? Their past jobs stay on record.")) { DB.users = DB.users.filter(x => x.id !== u.id); save(); renderTeam(); } });
+     <div class="card" style="padding:14px"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div><div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="4+ characters"></div></div><div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button></div></div>
+     <div class="hint">Accounts live on this phone only. Add the same people on each phone that runs the board.</div></div></div>`;
+  wireNav(); app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; renderTeam(); });
+  if (ed) { const u = DB.users.find(x => x.id === ed);
+    $("#e_save").onclick = () => { const name = $("#e_name").value.trim(), user = $("#e_user").value.trim().toLowerCase(), role = $("#e_role").value; if (!name || !user) { $("#e_err").textContent = "Name and username are required."; return; } if (DB.users.some(x => x.username === user && x.id !== u.id)) { $("#e_err").textContent = "That username is taken."; return; } u.name = name; u.username = user; if (u.role !== "owner") u.role = role; save(); ui.editUser = null; toast("Saved"); renderTeam(); };
+    $("#e_pw").onclick = () => textSheet({ title:`New password · ${esc(u.name)}`, placeholder:"At least 4 characters", saveLabel:"Set password", onSave: async pw => { if (pw.length < 4) { toast("Password needs 4+ characters"); return; } u.salt = uid(); u.hash = await hashPw(pw, u.salt); save(); toast("Password reset"); } });
+    const rm = $("#e_rm"); if (rm) rm.onclick = () => confirmSheet({ title:`Remove ${esc(u.name)}?`, text:"They won't be able to sign in on this phone. Their past jobs stay on record.", ok:"Remove", danger:true, onOk: () => { DB.users = DB.users.filter(x => x.id !== u.id); ui.editUser = null; save(); renderTeam(); } }); }
+  $("#t_add").onclick = async () => { const name = $("#t_name").value.trim(), user = $("#t_user").value.trim().toLowerCase(), pw = $("#t_pw").value, role = $("#t_role").value; if (!name || !user || pw.length < 4) { $("#t_err").textContent = "Name, username and a 4+ character password are required."; return; } if (DB.users.some(u => u.username === user)) { $("#t_err").textContent = "That username is taken."; return; } const salt = uid(); DB.users.push({ id:uid(), name, username:user, role, salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); save(); toast(name + " added"); renderTeam(); };
 }
 
 // ---------- settings ----------
+async function exportBackup(){ const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); }
 function renderSettings(){
   const u = me();
   app.innerHTML = topbar("Settings", `Signed in as ${esc(u.name)}`, `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="stack">
-     <div class="card" style="padding:14px"><div class="stack">
-       <div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div>
-       <button class="btn ghost" id="signout">Sign out</button>
-     </div></div>
+     <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
-     <div class="card" style="padding:14px"><div class="stack">
-       <div style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div>
-       <div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>
-       ${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}
-     </div></div>
-     <div class="hint">3X Job Board v3.3 · checklists rev 09/11/2026</div>
-   </div></div>`;
-  wireNav();
-  app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
+     <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div><div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}</div></div>
+     <div class="hint">3X Job Board v4 · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+  wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
-  $("#export").onclick = async () => { const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
-  $("#import").onclick = () => { const v = prompt("Paste a backup:"); if (!v) return; try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); if (d.v === 2) migrateV2(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } };
-  const w = $("#wipe"); if (w) w.onclick = () => { if (confirm("Erase all accounts, jobs and timing on this phone?") && confirm("Really erase? This cannot be undone.")) { localStorage.removeItem(KEY); location.reload(); } };
+  $("#export").onclick = exportBackup;
+  $("#import").onclick = () => textSheet({ title:"Import backup", placeholder:"Paste a backup here", saveLabel:"Restore", onSave: v => { try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); if (d.v === 2) migrateV2(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } } });
+  const w = $("#wipe"); if (w) w.onclick = () => confirmSheet({ title:"Erase everything?", text:"All accounts, jobs and timing on this phone are deleted. This cannot be undone.", ok:"Erase everything", danger:true, onOk: () => { localStorage.removeItem(KEY); location.reload(); } });
 }
 
 // ---------- boot ----------
 applyTheme();
 if (me()) ui.screen = "home";
 render();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(() => {});
 </script>
 </body>
 </html>
