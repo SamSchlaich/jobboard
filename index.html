@@ -279,9 +279,12 @@
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 /* =====================================================================
-   3X JOB BOARD v4 · offline job runner for 3X Detailing
+   3X JOB BOARD v5 · synced job runner for 3X Detailing (Firebase)
    Phase-level check-offs · per-checklist clocks · one job per car.
    ===================================================================== */
 
@@ -498,17 +501,26 @@ const listsForServices = ids => LIST_ORDER.filter(c => ids.some(id => (SVC[id] |
 function targetMin(sub){ const m = /(\d+)\s*[–-]\s*(\d+)\s*min|(\d+)\s*min/.exec(String(sub || "")); if (!m) return null; return m[2] ? +m[2] : +m[3]; }
 const OVER = 1.5; // "ran long" = more than 1.5× the phase target
 
-// ---------- persistence + migrations ----------
-const KEY = "3x_jobboard_v1";
-let DB = load();
-function load(){
-  let d = null; try { d = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
-  if (!d) return { v:3, users:[], jobs:[], session:null, theme:"auto", nudged:0 };
-  if (d.v === 1) migrateV1(d);
-  if (d.v === 2) migrateV2(d);
-  if (d.nudged == null) d.nudged = 0;
-  return d;
+// ---------- Firebase (shared database + sign-in) ----------
+const firebaseConfig = { apiKey:"AIzaSyA-9FC-rx1KfWckYMWYowcadJIfSVKLC5s", authDomain:"x-jobboard.firebaseapp.com", projectId:"x-jobboard", storageBucket:"x-jobboard.firebasestorage.app", messagingSenderId:"867291009444", appId:"1:867291009444:web:9074d85e597964d08ab131" };
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+let fdb; try { fdb = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); } catch(e){ fdb = initializeFirestore(fbApp, {}); }
+const AUTH_DOMAIN = "crew.3xdetailing.com"; // usernames map to synthetic sign-in emails; nothing is ever mailed
+const authEmailFor = (username, n) => `${username}${n > 1 ? "." + n : ""}@${AUTH_DOMAIN}`;
+
+// ---------- local state (settings on this phone; users + jobs mirror the shared database) ----------
+const SKEY = "3x_jobboard_settings"; const OLDKEY = "3x_jobboard_v1";
+let DB = { users:[], jobs:[], theme:"auto", nudged:0, session:null, ready:false, setupDone:null };
+try { const st = JSON.parse(localStorage.getItem(SKEY) || "null"); if (st) { DB.theme = st.theme || "auto"; DB.nudged = st.nudged || 0; } } catch(e){}
+function save(){ try { localStorage.setItem(SKEY, JSON.stringify({ theme:DB.theme, nudged:DB.nudged })); } catch(e){} }
+const jobTimers = {};
+function saveJob(job){ // write the whole job document (debounced per job); Firestore queues it offline
+  job.updatedAt = Date.now(); clearTimeout(jobTimers[job.id]);
+  jobTimers[job.id] = setTimeout(() => { setDoc(doc(fdb, "jobs", job.id), JSON.parse(JSON.stringify(job))).catch(e => toast("Sync failed: " + (e.code || e.message))); }, 250);
 }
+function deleteJob(id){ DB.jobs = DB.jobs.filter(j => j.id !== id); deleteDoc(doc(fdb, "jobs", id)).catch(e => toast("Delete failed: " + (e.code || e.message))); }
+function localLegacy(){ try { const d = JSON.parse(localStorage.getItem(OLDKEY) || "null"); return d && Array.isArray(d.jobs) && d.jobs.length ? d : null; } catch(e){ return null; } }
 function migrateV2(d){ d.jobs.forEach(job => Object.values(job.lists).forEach(L => { if (!L.runs) L.runs = job.arrivedAt ? [{ start:job.arrivedAt, end:job.finishedAt || null }] : []; })); d.v = 3; }
 function migrateV1(d){
   d.jobs.forEach(job => {
@@ -524,16 +536,7 @@ function migrateV1(d){
   });
   d.v = 2; migrateV2(d);
 }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ toast("Could not save — storage full or blocked"); } }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-
-// ---------- password hashing (local gate, not bank-grade) ----------
-async function hashPw(pw, salt){
-  const s = salt + "|" + pw;
-  if (window.crypto && crypto.subtle) { try { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return "s:" + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join(""); } catch(e){} }
-  let h1 = 0x811c9dc5, h2 = 5381; for (let i=0;i<s.length;i++){ const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = ((h2 << 5) + h2 + c) >>> 0; }
-  return "f:" + h1.toString(16) + h2.toString(16);
-}
 
 // ---------- time helpers ----------
 const fmtT = ts => ts ? new Date(ts).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) : "—";
@@ -579,7 +582,7 @@ function jobProgress(job){ let d=0,t=0; jobLists(job).forEach(c => { const p = l
 function jobLastActivity(job){ let m = job.arrivedAt || job.createdAt; jobLists(job).forEach(c => Object.values(job.lists[c].phases).forEach(ts => { if (ts > m) m = ts; })); return m; }
 function jobTotal(job){ if (!job.arrivedAt) return null; return (job.finishedAt || Date.now()) - job.arrivedAt; }
 const userName = id => (DB.users.find(u => u.id === id) || {}).name || "—";
-const me = () => DB.users.find(u => u.id === (DB.session && DB.session.userId)) || null;
+const me = () => DB.users.find(u => u.id === (DB.session && DB.session.userId) && u.active !== false) || null;
 const isOwner = () => (me() || {}).role === "owner";
 function allNotes(job){
   const out = []; if (job.notes) out.push({ where:"Job", what:job.notes, kind:"job" });
@@ -677,24 +680,46 @@ function storageWarning(){
 // ---------- render root ----------
 function render(){
   setLive(null);
-  if (!DB.users.length) renderSetup();
-  else if (!me()) renderLogin();
+  if (!DB.ready) return renderSplash();
+  if (!DB.session) { if (DB.setupDone === false) renderSetup(); else renderLogin(); }
+  else if (!me()) renderWaiting();
   else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
   const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
 function topbar(title, sub, right){ return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div></div>`; }
 function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 
-// ---------- first-run setup + login ----------
+// ---------- first-run setup + login (Firebase) ----------
+function renderSplash(){ app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Connecting…</div></div></div>`; }
+function renderWaiting(){ app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Loading your profile…</div><button class="btn ghost" id="w_out">Sign out</button></div></div>`; $("#w_out").onclick = () => fbSignOut(auth); }
+const authErr = e => ({ "auth/invalid-credential":"Wrong username or password.", "auth/invalid-login-credentials":"Wrong username or password.", "auth/wrong-password":"Wrong username or password.", "auth/user-not-found":"Wrong username or password.", "auth/network-request-failed":"No connection. Sign-in needs signal the first time.", "auth/email-already-in-use":"That username is already taken.", "auth/weak-password":"Password needs 6+ characters.", "auth/too-many-requests":"Too many tries — wait a minute." }[e.code] || (e.message || String(e)));
+const cleanUser = u => u.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
 function renderSetup(){
-  app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">First run on this phone. Create the owner account — it manages the team.</div>
-    <div class="card stack"><div class="field"><label>Your name</label><input id="s_name" placeholder="Sam Schlaich" autocomplete="off"></div><div class="field"><label>Username</label><input id="s_user" placeholder="sam" autocapitalize="none" autocomplete="off"></div><div class="field"><label>Password</label><input id="s_pw" type="password" placeholder="at least 4 characters"></div><div class="err" id="s_err"></div><button class="btn primary" id="s_go">Create owner account</button></div></div></div>`;
-  $("#s_go").onclick = async () => { const name = $("#s_name").value.trim(), user = $("#s_user").value.trim().toLowerCase(), pw = $("#s_pw").value; if (!name || !user || pw.length < 4) { $("#s_err").textContent = "Name, username and a 4+ character password are required."; return; } const salt = uid(); DB.users.push({ id:uid(), name, username:user, role:"owner", salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); DB.session = { userId: DB.users[0].id }; save(); go("home"); };
+  app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">First run for the whole team. Create the owner account — it manages everyone else and works on every phone.</div>
+    <div class="card stack"><div class="field"><label>Your name</label><input id="s_name" placeholder="Sam Schlaich" autocomplete="off"></div><div class="field"><label>Username</label><input id="s_user" placeholder="sam" autocapitalize="none" autocomplete="off"></div><div class="field"><label>Password</label><input id="s_pw" type="password" placeholder="at least 6 characters"></div><div class="err" id="s_err"></div><button class="btn primary" id="s_go">Create owner account</button></div></div></div>`;
+  $("#s_go").onclick = async () => {
+    const name = $("#s_name").value.trim(), user = cleanUser($("#s_user").value), pw = $("#s_pw").value; const b = $("#s_go");
+    if (!name || !user || pw.length < 6) { $("#s_err").textContent = "Name, username and a 6+ character password are required."; return; }
+    b.disabled = true; $("#s_err").textContent = "";
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, authEmailFor(user, 1), pw); const uidv = cred.user.uid;
+      const batch = writeBatch(fdb);
+      batch.set(doc(fdb, "users", uidv), { name, username:user, role:"owner", active:true, authEmail:authEmailFor(user, 1), createdAt:Date.now() });
+      batch.set(doc(fdb, "usernames", user), { uid:uidv, authEmail:authEmailFor(user, 1), n:1 });
+      batch.set(doc(fdb, "meta", "setup"), { ownerUid:uidv, createdAt:Date.now() });
+      await batch.commit(); DB.setupDone = true; toast("Owner account created");
+    } catch(e){ $("#s_err").textContent = authErr(e); b.disabled = false; }
+  };
 }
 function renderLogin(){
   app.innerHTML = `<div class="main"><div class="login"><div class="mark"><b>3X</b> JOB BOARD</div><div class="tag">Sign in to run today's checklists.</div>
-    <div class="card stack"><div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div><div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div><div class="err" id="l_err"></div><button class="btn primary" id="l_go">Sign in</button></div><div class="hint">Accounts are created by the owner in Team.</div></div></div>`;
-  const tryLogin = async () => { const u = DB.users.find(x => x.username === $("#l_user").value.trim().toLowerCase()); if (!u || (await hashPw($("#l_pw").value, u.salt)) !== u.hash) { $("#l_err").textContent = "Wrong username or password."; return; } DB.session = { userId:u.id }; save(); go("home"); };
+    <div class="card stack"><div class="field"><label>Username</label><input id="l_user" autocapitalize="none" autocomplete="username"></div><div class="field"><label>Password</label><input id="l_pw" type="password" autocomplete="current-password"></div><div class="err" id="l_err"></div><button class="btn primary" id="l_go">Sign in</button></div><div class="hint">Accounts are created by the owner in Team. Same username and password on every phone.</div></div></div>`;
+  const tryLogin = async () => {
+    const user = cleanUser($("#l_user").value), pw = $("#l_pw").value; const b = $("#l_go"); if (!user || !pw) return;
+    b.disabled = true; $("#l_err").textContent = "";
+    try { const snap = await getDoc(doc(fdb, "usernames", user)); if (!snap.exists()) throw { code:"auth/user-not-found" }; await signInWithEmailAndPassword(auth, snap.data().authEmail, pw); }
+    catch(e){ $("#l_err").textContent = authErr(e); b.disabled = false; }
+  };
   $("#l_go").onclick = tryLogin; $("#l_pw").onkeydown = e => { if (e.key === "Enter") tryLogin(); }; setTimeout(() => $("#l_user").focus(), 50);
 }
 
@@ -754,7 +779,7 @@ function renderNewJob(){
     if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
     const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
     listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"", runs:[] });
-    DB.jobs.push(job); save(); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
+    DB.jobs.push(job); saveJob(job); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
 function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob"); }
@@ -781,8 +806,8 @@ function renderJob(){
   let raf = 0; panes.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const i = Math.round(panes.scrollLeft / panes.clientWidth); if (i !== ui.pane) { ui.pane = i; syncTabs(); } }); });
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
   $("#arrive").onclick = () => {
-    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); save(); toast("Started " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client}` : " · all checklists running")); renderJob(); return; }
-    timeSheet({ title:"Arrival time", ts:job.arrivedAt, hint:"Every checklist's clock starts here.", onSave: ts => { const old = job.arrivedAt; job.arrivedAt = ts; jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job); save(); renderJob(); } });
+    if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); saveJob(job); toast("Started " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client}` : " · all checklists running")); renderJob(); return; }
+    timeSheet({ title:"Arrival time", ts:job.arrivedAt, hint:"Every checklist's clock starts here.", onSave: ts => { const old = job.arrivedAt; job.arrivedAt = ts; jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job); saveJob(job); renderJob(); } });
   };
   panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
   $("#notesbtn").onclick = () => openNotes(job);
@@ -832,44 +857,44 @@ function wirePane(job, pane){
   pane.querySelectorAll("[data-toggle]").forEach(el => el.onclick = () => { const key = el.dataset.toggle; const [code, pi] = key.split(":"); const s = phaseStats(job, code)[+pi]; const open = ui.open.has(key) || (s.current && !ui.closed.has(key)); if (open) { ui.open.delete(key); if (s.current) ui.closed.add(key); } else { ui.open.add(key); ui.closed.delete(key); } refreshPane(job, code); });
   pane.querySelectorAll("[data-phase]").forEach(el => el.onclick = () => {
     const [code, pi] = el.dataset.phase.split(":"); const L = job.lists[code]; const ph = LISTS[code].phases[+pi];
-    if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; save(); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); save(); refreshPane(job, code); } }); return; }
+    if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; saveJob(job); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); saveJob(job); refreshPane(job, code); } }); return; }
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
-    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); save(); jobLists(job).forEach(c => refreshPane(job, c)); } else { save(); refreshPane(job, code); }
+    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); } else { saveJob(job); refreshPane(job, code); }
     const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
   });
   pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
-  pane.querySelectorAll("[data-resume]").forEach(el => el.onclick = () => { resumeList(job, el.dataset.resume); save(); toast(LISTS[el.dataset.resume].title + " running"); refreshPane(job, el.dataset.resume); });
-  pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; save(); $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : ""); });
+  pane.querySelectorAll("[data-resume]").forEach(el => el.onclick = () => { resumeList(job, el.dataset.resume); saveJob(job); toast(LISTS[el.dataset.resume].title + " running"); refreshPane(job, el.dataset.resume); });
+  pane.querySelectorAll("[data-lnotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.lnotes].notes = ta.value; saveJob(job); $("#notesbtn").textContent = "Notes" + (allNotes(job).length ? ` · ${allNotes(job).length}` : ""); });
 }
 function phaseNoteSheet(job, code, pi){
   const ph = LISTS[code].phases[pi]; const L = job.lists[code];
   const s = openSheet(`${esc(ph[0])} · note or flag`, `<div class="notegroup"><h3>What is it about?</h3><div class="reasons">
     <button data-k="${pi}_g">This phase in general${L.flags[pi+"_g"] ? `<small>⚑ ${esc(L.flags[pi+"_g"])}</small>` : `<small>e.g. "come back to this spot later", "client asked for…"</small>`}</button>
     ${ph[3].map((txt, ii) => `<button data-k="${pi}_${ii}">${esc(txt)}${L.flags[pi+"_"+ii] ? `<small>⚑ ${esc(L.flags[pi+"_"+ii])}</small>` : ""}</button>`).join("")}</div></div>`);
-  s.el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const k = b.dataset.k; s.close(); textSheet({ title:"Note", label: k.endsWith("_g") ? `<em>${esc(ph[0])}</em> · general` : "Step", value:L.flags[k] || "", placeholder:"Anything worth remembering — a reminder, an issue, a client request…", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; save(); refreshPane(job, code); } }); });
+  s.el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const k = b.dataset.k; s.close(); textSheet({ title:"Note", label: k.endsWith("_g") ? `<em>${esc(ph[0])}</em> · general` : "Step", value:L.flags[k] || "", placeholder:"Anything worth remembering — a reminder, an issue, a client request…", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; saveJob(job); refreshPane(job, code); } }); });
 }
 const PAUSE_REASONS = ["Working on another checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
 function openPause(job, code){
   const s = openSheet(`Pause · ${esc(LISTS[code].title)}`, `<div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div><div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div>`);
-  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); save(); toast(LISTS[code].title + " paused"); refreshPane(job, code); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
+  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); saveJob(job); toast(LISTS[code].title + " paused"); refreshPane(job, code); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
 }
 function openNotes(job){
   ui.sheet = "notes"; const notes = allNotes(job).filter(n => n.kind === "step"); const lists = jobLists(job);
   const s = openSheet(`Notes · ${esc(job.vehicle)}`, `<div class="notegroup"><h3><em>Job</em> notes</h3><textarea id="jobnotes" placeholder="Client requests, issues, where the key went, anything Sam should know…">${esc(job.notes)}</textarea></div>
       <div class="notegroup"><h3><em>Phase</em> notes & flags</h3>${notes.length ? notes.map(n => `<div class="noteline"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}<small>${esc(n.step)}</small></div><button data-editflag="${n.code}:${n.k}">edit</button></div>`).join("") : `<div class="noteline"><div class="t" style="color:var(--muted)">Nothing yet. Use "Note / flag" on any phase.</div></div>`}</div>
       ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}`, { closeLabel:"Done", onClose: () => { ui.sheet = false; renderJob(); } });
-  $("#jobnotes").oninput = e => { job.notes = e.target.value; save(); };
-  s.el.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; save(); });
-  s.el.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; ui.sheet = false; textSheet({ title:"Edit note", value:L.flags[k] || "", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; save(); openNotes(job); } }); });
+  $("#jobnotes").oninput = e => { job.notes = e.target.value; saveJob(job); };
+  s.el.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; saveJob(job); });
+  s.el.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; ui.sheet = false; textSheet({ title:"Edit note", value:L.flags[k] || "", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; saveJob(job); openNotes(job); } }); });
 }
 function finishJob(job){
   const p = jobProgress(job);
   const done = () => {
     if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
     job.finishedAt = Date.now(); job.status = "done"; jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
-    save(); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id});
+    saveJob(job); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id});
     const n = DB.jobs.filter(j => j.status === "done").length; if (n > 0 && n % 5 === 0 && DB.nudged !== n) { DB.nudged = n; save(); setTimeout(() => confirmSheet({ title:"Back up your data", text:`${n} jobs finished on this phone. Everything lives here until the sync exists — take 10 seconds to export a backup.`, ok:"Export backup now", onOk: exportBackup }), 600); }
   };
   if (p.d < p.t) textSheet({ title:"Finish with open phases?", label:`<em>${p.t - p.d}</em> phase${p.t - p.d === 1 ? "" : "s"} not marked`, placeholder:"Why is the job being closed early? (goes on the report)", saveLabel:"Finish anyway", onSave: v => { job.finishNote = v; done(); } });
@@ -911,7 +936,7 @@ function renderReport(){
   $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title:`3X Job — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
   $("#copy").onclick = () => copyText(text); $("#copyfull").onclick = () => copyText(fullText(job));
   const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
-  const d = $("#deljob"); if (d) d.onclick = () => confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed from this phone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { DB.jobs = DB.jobs.filter(j => j.id !== job.id); save(); go("history"); } });
+  const d = $("#deljob"); if (d) d.onclick = () => confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed from this phone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { deleteJob(job.id); go("history"); } });
 }
 async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ textSheet({ title:"Copy this", value:t, saveLabel:"Done", allowEmpty:true, onSave: () => {} }); } }
 
@@ -947,46 +972,102 @@ function renderHistory(){
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
 }
 
-// ---------- team ----------
+// ---------- team (accounts live in the shared database) ----------
+async function createCrewAccount(name, username, role, pw){ // owner creates a sign-in for someone else without leaving their own session
+  const { initializeApp: init2 } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
+  const { getAuth: getAuth2, createUserWithEmailAndPassword: create2, signOut: out2 } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js");
+  const app2 = init2(firebaseConfig, "crew-" + Date.now()); const auth2 = getAuth2(app2);
+  const existing = await getDoc(doc(fdb, "usernames", username)); const n = existing.exists() ? (existing.data().n || 1) + 1 : 1;
+  const email = authEmailFor(username, n);
+  const cred = await create2(auth2, email, pw); const uidv = cred.user.uid; await out2(auth2);
+  return { uid:uidv, email, n };
+}
 function renderTeam(){
   if (!isOwner()) return go("home"); const ed = ui.editUser;
   const stats = u => { const led = DB.jobs.filter(j => j.status === "done" && j.leadId === u.id && jobTotal(j) != null); const worked = DB.jobs.filter(j => j.status === "done" && j.techIds.includes(u.id)).length; const avg = led.length ? led.reduce((a,j) => a + jobTotal(j), 0)/led.length : null; return `${led.length} led${worked ? ` · ${worked} as tech` : ""}${avg ? ` · ${fmtD(avg)} avg` : ""}`; };
-  app.innerHTML = topbar("Team", "Everyone who signs in on the job", `<button class="tbtn" data-go="home">Board</button>`) +
-   `<div class="main"><div class="stack"><div class="card">${DB.users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${stats(u)}</div></div><button class="btn small ghost" data-edit="${u.id}">${ed === u.id ? "Close" : "Edit"}</button></div>
-        ${ed === u.id ? `<div class="editrow"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div><div class="field"><label>Username</label><input id="e_user" autocapitalize="none" value="${esc(u.username)}"></div><div class="err" id="e_err"></div><div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_pw">Reset password</button></div>${u.role !== "owner" ? `<button class="btn ghost danger" id="e_rm">Remove ${esc(u.name.split(" ")[0])} from the team</button>` : ""}</div></div>` : ""}`).join("")}</div>
+  const users = DB.users.filter(u => u.active !== false);
+  app.innerHTML = topbar("Team", "Same sign-in on every phone", `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="stack"><div class="card">${users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${stats(u)}</div></div><button class="btn small ghost" data-edit="${u.id}">${ed === u.id ? "Close" : "Edit"}</button></div>
+        ${ed === u.id ? `<div class="editrow"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div><div class="field"><label>Username</label><input id="e_user" value="${esc(u.username)}" disabled></div><div class="err" id="e_err"></div><div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_pw">Reset password</button></div>${u.role !== "owner" ? `<button class="btn ghost danger" id="e_rm">Remove ${esc(u.name.split(" ")[0])} from the team</button>` : ""}</div></div>` : ""}`).join("")}</div>
      <div class="sect-title"><h2>Add a team member</h2></div>
-     <div class="card" style="padding:14px"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div><div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="4+ characters"></div></div><div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button></div></div>
-     <div class="hint">Accounts live on this phone only. Add the same people on each phone that runs the board.</div></div></div>`;
+     <div class="card" style="padding:14px"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div><div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="6+ characters"></div></div><div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button></div></div>
+     <div class="hint">Accounts are shared. Anyone you add can sign in on any phone with the app link.</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; renderTeam(); });
   if (ed) { const u = DB.users.find(x => x.id === ed);
-    $("#e_save").onclick = () => { const name = $("#e_name").value.trim(), user = $("#e_user").value.trim().toLowerCase(), role = $("#e_role").value; if (!name || !user) { $("#e_err").textContent = "Name and username are required."; return; } if (DB.users.some(x => x.username === user && x.id !== u.id)) { $("#e_err").textContent = "That username is taken."; return; } u.name = name; u.username = user; if (u.role !== "owner") u.role = role; save(); ui.editUser = null; toast("Saved"); renderTeam(); };
-    $("#e_pw").onclick = () => textSheet({ title:`New password · ${esc(u.name)}`, placeholder:"At least 4 characters", saveLabel:"Set password", onSave: async pw => { if (pw.length < 4) { toast("Password needs 4+ characters"); return; } u.salt = uid(); u.hash = await hashPw(pw, u.salt); save(); toast("Password reset"); } });
-    const rm = $("#e_rm"); if (rm) rm.onclick = () => confirmSheet({ title:`Remove ${esc(u.name)}?`, text:"They won't be able to sign in on this phone. Their past jobs stay on record.", ok:"Remove", danger:true, onOk: () => { DB.users = DB.users.filter(x => x.id !== u.id); ui.editUser = null; save(); renderTeam(); } }); }
-  $("#t_add").onclick = async () => { const name = $("#t_name").value.trim(), user = $("#t_user").value.trim().toLowerCase(), pw = $("#t_pw").value, role = $("#t_role").value; if (!name || !user || pw.length < 4) { $("#t_err").textContent = "Name, username and a 4+ character password are required."; return; } if (DB.users.some(u => u.username === user)) { $("#t_err").textContent = "That username is taken."; return; } const salt = uid(); DB.users.push({ id:uid(), name, username:user, role, salt, hash: await hashPw(pw, salt), createdAt:Date.now() }); save(); toast(name + " added"); renderTeam(); };
+    $("#e_save").onclick = async () => { const name = $("#e_name").value.trim(), role = $("#e_role").value; if (!name) { $("#e_err").textContent = "Name is required."; return; } try { await updateDoc(doc(fdb, "users", u.id), { name, ...(u.role !== "owner" ? { role } : {}) }); u.name = name; if (u.role !== "owner") u.role = role; ui.editUser = null; toast("Saved"); renderTeam(); } catch(e){ $("#e_err").textContent = authErr(e); } };
+    $("#e_pw").onclick = () => textSheet({ title:`New password · ${esc(u.name)}`, placeholder:"At least 6 characters", saveLabel:"Set password", hint:"Sets a fresh sign-in for this username. Their old password stops working.", onSave: async pw => { if (pw.length < 6) { toast("Password needs 6+ characters"); return; } try { const r = await createCrewAccount(u.name, u.username, u.role, pw); const batch = writeBatch(fdb); batch.set(doc(fdb, "users", r.uid), { name:u.name, username:u.username, role:u.role, active:true, authEmail:r.email, createdAt:Date.now(), replaces:u.id }); batch.update(doc(fdb, "users", u.id), { active:false, replacedBy:r.uid }); batch.set(doc(fdb, "usernames", u.username), { uid:r.uid, authEmail:r.email, n:r.n }); await batch.commit(); DB.jobs.filter(j => j.leadId === u.id || j.techIds.includes(u.id)).forEach(j => { if (j.leadId === u.id) j.leadId = r.uid; j.techIds = j.techIds.map(x => x === u.id ? r.uid : x); saveJob(j); }); ui.editUser = null; toast("Password reset"); } catch(e){ toast(authErr(e)); } } });
+    const rm = $("#e_rm"); if (rm) rm.onclick = () => confirmSheet({ title:`Remove ${esc(u.name)}?`, text:"They won't be able to sign in anywhere. Their past jobs stay on record.", ok:"Remove", danger:true, onOk: async () => { try { await updateDoc(doc(fdb, "users", u.id), { active:false }); ui.editUser = null; toast("Removed"); } catch(e){ toast(authErr(e)); } } }); }
+  $("#t_add").onclick = async () => {
+    const name = $("#t_name").value.trim(), user = cleanUser($("#t_user").value), pw = $("#t_pw").value, role = $("#t_role").value; const b = $("#t_add");
+    if (!name || !user || pw.length < 6) { $("#t_err").textContent = "Name, username and a 6+ character password are required."; return; }
+    if (DB.users.some(x => x.username === user && x.active !== false)) { $("#t_err").textContent = "That username is taken."; return; }
+    b.disabled = true; $("#t_err").textContent = "";
+    try { const r = await createCrewAccount(name, user, role, pw); const batch = writeBatch(fdb); batch.set(doc(fdb, "users", r.uid), { name, username:user, role, active:true, authEmail:r.email, createdAt:Date.now() }); batch.set(doc(fdb, "usernames", user), { uid:r.uid, authEmail:r.email, n:r.n }); await batch.commit(); toast(name + " added — they can sign in now"); }
+    catch(e){ $("#t_err").textContent = authErr(e); b.disabled = false; }
+  };
 }
 
 // ---------- settings ----------
-async function exportBackup(){ const text = JSON.stringify(DB); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); }
+async function exportBackup(){ const text = JSON.stringify({ v:3, users:DB.users, jobs:DB.jobs, exportedAt:Date.now() }); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); }
 function renderSettings(){
   const u = me();
   app.innerHTML = topbar("Settings", `Signed in as ${esc(u.name)}`, `<button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="stack">
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
-     <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Everything lives on this phone. Back it up now and then, or move it to another phone.</div><div class="grid2"><button class="btn" id="export">Export backup</button><button class="btn" id="import">Import backup</button></div>${isOwner() ? `<button class="btn ghost danger" id="wipe">Erase everything on this phone</button>` : ""}</div></div>
-     <div class="hint">3X Job Board v4.1 · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div><div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
+     <div class="hint">3X Job Board v5 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
-  $("#signout").onclick = () => { DB.session = null; save(); go("login"); };
+  $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
-  $("#import").onclick = () => textSheet({ title:"Import backup", placeholder:"Paste a backup here", saveLabel:"Restore", onSave: v => { try { const d = JSON.parse(v); if (!d.v || !Array.isArray(d.jobs)) throw 0; if (d.v === 1) migrateV1(d); if (d.v === 2) migrateV2(d); d.session = DB.session; DB = d; save(); applyTheme(); toast("Backup restored"); go("home"); } catch(e){ toast("That wasn't a valid backup"); } } });
-  const w = $("#wipe"); if (w) w.onclick = () => confirmSheet({ title:"Erase everything?", text:"All accounts, jobs and timing on this phone are deleted. This cannot be undone.", ok:"Erase everything", danger:true, onOk: () => { localStorage.removeItem(KEY); location.reload(); } });
+  const im = $("#import"); if (im) im.onclick = offerLegacyUpload;
+}
+
+// ---------- legacy upload (jobs stored on this phone before sync existed) ----------
+function offerLegacyUpload(){
+  const d = localLegacy(); if (!d) { toast("No old jobs on this phone"); return; }
+  if (d.v === 1) migrateV1(d); if (d.v === 2) migrateV2(d);
+  const already = new Set(DB.jobs.map(j => j.id)); const fresh = d.jobs.filter(j => !already.has(j.id));
+  if (!fresh.length) { localStorage.removeItem(OLDKEY); toast("Those jobs are already uploaded"); return; }
+  const meId = DB.session.userId; const oldUsers = d.users || [];
+  confirmSheet({ title:"Upload this phone's jobs?", text:`${fresh.length} job${fresh.length === 1 ? "" : "s"} from before the sync existed. They'll be credited to you as lead where the old account can't be matched.`, ok:`Upload ${fresh.length} job${fresh.length === 1 ? "" : "s"}`, onOk: async () => {
+    try { const batch = writeBatch(fdb); const mapU = id => { const o = oldUsers.find(u => u.id === id); const m = o && DB.users.find(u => u.username === o.username && u.active !== false); return m ? m.id : meId; };
+      fresh.forEach(j => { j.leadId = mapU(j.leadId); j.techIds = (j.techIds || []).map(mapU).filter(x => x !== j.leadId); j.updatedAt = Date.now(); batch.set(doc(fdb, "jobs", j.id), JSON.parse(JSON.stringify(j))); });
+      await batch.commit(); localStorage.removeItem(OLDKEY); toast(`Uploaded ${fresh.length} job${fresh.length === 1 ? "" : "s"}`); }
+    catch(e){ toast("Upload failed: " + (e.code || e.message)); } } });
+}
+
+// ---------- live sync ----------
+let unsubUsers = null, unsubJobs = null, pendingRemote = false;
+function onRemote(){
+  const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ($("#sheet") || typing) { pendingRemote = true; return; }
+  pendingRemote = false;
+  if (ui.screen === "job") { const tops = {}; document.querySelectorAll(".pane").forEach(p => tops[p.dataset.code] = p.scrollTop); renderJob(); document.querySelectorAll(".pane").forEach(p => { if (tops[p.dataset.code] != null) p.scrollTop = tops[p.dataset.code]; }); }
+  else if (ui.screen !== "newjob") render();
+}
+document.addEventListener("focusout", () => { if (pendingRemote) setTimeout(() => { if (pendingRemote && !$("#sheet")) onRemote(); }, 300); });
+function subscribe(){
+  unsubUsers = onSnapshot(collection(fdb, "users"), snap => { DB.users = snap.docs.map(d => ({ id:d.id, ...d.data() })); DB.usersReady = true; checkReady(); }, e => toast("Team sync error: " + e.code));
+  unsubJobs = onSnapshot(query(collection(fdb, "jobs"), orderBy("createdAt")), snap => { DB.jobs = snap.docs.map(d => d.data()); DB.jobsReady = true; checkReady(); }, e => toast("Job sync error: " + e.code));
+}
+function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); unsubUsers = unsubJobs = null; DB.users = []; DB.jobs = []; DB.usersReady = DB.jobsReady = false; }
+function checkReady(){
+  if (!(DB.usersReady && DB.jobsReady)) return;
+  if (!DB.ready) { DB.ready = true; ui.screen = me() ? "home" : ui.screen; render(); }
+  else onRemote();
+  if (me() && isOwner() && localLegacy() && !DB.offeredLegacy) { DB.offeredLegacy = true; setTimeout(offerLegacyUpload, 800); }
 }
 
 // ---------- boot ----------
-applyTheme();
-if (me()) ui.screen = "home";
-render();
+applyTheme(); renderSplash();
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+onAuthStateChanged(auth, async user => {
+  if (user) { DB.session = { userId:user.uid }; DB.ready = false; unsubscribe(); subscribe(); }
+  else { unsubscribe(); DB.session = null; ui.screen = "login"; try { const s = await getDoc(doc(fdb, "meta", "setup")); DB.setupDone = s.exists(); } catch(e){ DB.setupDone = true; } DB.ready = true; render(); }
+});
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(() => {});
+window.__db = () => DB;
 </script>
 </body>
 </html>

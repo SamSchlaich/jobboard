@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function isActive() { return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid)) && profile().active == true; }
+    function isOwner() { return isActive() && profile().role == 'owner'; }
+    function setupDone() { return exists(/databases/$(db)/documents/meta/setup); }
+
+    // one-time owner setup marker
+    match /meta/setup {
+      allow read: if true;
+      allow create: if signedIn() && !setupDone() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    // username -> sign-in mapping (readable before sign-in so the login screen can look a username up)
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if signedIn() && (!setupDone() || isOwner());
+      allow update: if isOwner();
+      allow delete: if false;
+    }
+    // team profiles
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && ((!setupDone() && request.auth.uid == uid && request.resource.data.role == 'owner') || isOwner());
+      allow update: if isOwner();
+      allow delete: if false;
+    }
+    // jobs: every active team member reads and writes
+    match /jobs/{jobId} {
+      allow read, write: if isActive();
+    }
+  }
+}

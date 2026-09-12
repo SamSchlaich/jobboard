@@ -1,5 +1,5 @@
 /* 3X Job Board — offline cache. Network-first for the app shell so updates arrive when online; cache fallback when there is no signal. */
-const CACHE = "3x-jobboard-v4";
+const CACHE = "3x-jobboard-v5";
 const SHELL = ["./", "./index.html"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
@@ -8,7 +8,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; }).catch(() => caches.match(req).then(r => r || caches.match("./index.html"))));
-  } else if (/fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
+  } else if (/fonts\.(googleapis|gstatic)\.com|www\.gstatic\.com/.test(url.host)) {
     e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; }).catch(() => r)));
   }
 });
