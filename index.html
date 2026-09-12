@@ -109,6 +109,9 @@
   .pickitem b { display:block; font-size:15.5px; }
   .pickitem small { color:var(--muted); font-size:12px; }
   .pickitem.new { border-color:var(--red); } .pickitem.new b { color:var(--red); }
+  .kvrow { display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:14.5px; padding:4px 0; border-bottom:1px solid var(--line); }
+  .kvrow:last-of-type { border-bottom:none; }
+  .kvrow b { color:var(--muted); font-weight:600; font-size:13px; }
   .warnbar { background:var(--warn-bg); color:var(--warn); padding:10px 14px; font-size:13px; font-weight:600; border-bottom:1px solid var(--line); }
 
   /* ---------- sheets (replace browser pop-ups) ---------- */
@@ -660,7 +663,7 @@ function fullText(job){
 }
 
 // ---------- UI state ----------
-const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", histDetail:null, newjob:null, editUser:null, sheet:false, open:new Set(), closed:new Set() };
+const ui = { screen:"login", jobId:null, pane:0, histFilter:"all", histDetail:null, newjob:null, editUser:null, sheet:false, open:new Set(), closed:new Set(), clientQ:"", clientId:null, clientEdit:false };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $ = sel => document.querySelector(sel);
 const app = document.getElementById("app");
@@ -726,7 +729,7 @@ function render(){
   if (!DB.ready) return renderSplash();
   if (!DB.session) { if (DB.setupDone === false) renderSetup(); else renderLogin(); }
   else if (!me()) renderWaiting();
-  else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings })[ui.screen === "login" ? "home" : ui.screen]();
+  else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings, clients:renderClients, client:renderClient })[ui.screen === "login" ? "home" : ui.screen]();
   const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
 function topbar(title, sub, right){ return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div></div>`; }
@@ -793,7 +796,7 @@ function renderHome(){
     `<div class="main"><div class="stack">
       <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
       ${active.length ? active.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "No cars on the board. Start a job when you pull up." : "Loading jobs…"}</div>`}
-      <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><button class="btn small ghost" data-go="history">History & stats</button></div>
+      <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><div style="display:flex;gap:6px"><button class="btn small ghost" data-go="clients">Clients</button><button class="btn small ghost" data-go="history">History & stats</button></div></div>
       ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "Finished jobs show up here with their timing." : "Loading…"}</div>`}
       ${isOwner() ? `<button class="btn ghost" data-go="team">Manage team</button>` : ""}
     </div></div><div class="actionbar"><button class="primary" data-go="newjob">+ New job</button></div>`;
@@ -1025,6 +1028,78 @@ function renderHistory(){
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
 }
 
+// ---------- clients ----------
+const CADENCES = [["", "No schedule"], ["7", "Weekly"], ["14", "Every 2 weeks"], ["30", "Monthly"], ["60", "Every 2 months"], ["90", "Quarterly"], ["180", "Every 6 months"]];
+const canEditClients = () => { const r = (me() || {}).role; return r === "owner" || r === "lead"; };
+function clientLastVisit(c){ // latest of the stored date and any job on the board for this client
+  let last = c.lastVisit || ""; DB.jobs.filter(j => sameClient(j.client, c.name) && j.status === "done").forEach(j => { if (j.date > last) last = j.date; }); return last;
+}
+function clientNextDue(c){ if (c.nextDue) return c.nextDue; const cad = +c.cadenceDays || 0; const last = clientLastVisit(c); if (!cad || !last) return ""; const [y,m,d] = last.split("-"); const dt = new Date(+y, +m-1, +d + cad); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`; }
+function dueState(c){ const nd = clientNextDue(c); if (!nd) return null; const days = Math.round((new Date(nd) - new Date(todayISO())) / 86400000); return { date:nd, days, cls: days < 0 ? "bad" : days <= 7 ? "warn" : "good", text: days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `due in ${days}d` }; }
+function renderClients(){
+  const q = ui.clientQ.trim().toLowerCase(); const words = q.split(/\s+/).filter(Boolean);
+  const all = [...DB.clients].sort((a,b) => a.name.localeCompare(b.name));
+  const hits = all.filter(c => !q || words.every(w => c.name.toLowerCase().split(/[^a-z0-9]+/).some(p => p.startsWith(w))) || (c.vehicles || []).some(v => v.toLowerCase().includes(q)));
+  const due = all.map(c => ({ c, d:dueState(c) })).filter(x => x.d && x.d.days <= 14).sort((a,b) => a.d.days - b.d.days);
+  const row = c => { const d = dueState(c); return `<button class="rowitem" data-client="${c.id}"><div style="min-width:0"><div class="n">${esc(c.name)}${d ? ` <span class="pill ${d.cls}">${esc(d.text)}</span>` : ""}</div><div class="s">${(c.vehicles || []).length ? esc((c.vehicles || []).slice(0,3).join(" · ")) + ((c.vehicles || []).length > 3 ? ` · +${c.vehicles.length - 3}` : "") : "no vehicles on file"}${c.phone ? ` · ${esc(c.phone)}` : ""}</div></div><span class="chev" style="color:var(--muted)">›</span></button>`; };
+  app.innerHTML = topbar("Clients", `${all.length} on file · ${canEditClients() ? "tap one to view or edit" : "tap one to view"}`, `<button class="tbtn" data-go="home">Board</button>`) +
+   `<div class="main"><div class="stack">
+     <input class="pickq" id="cq" placeholder="Search by name or car…" value="${esc(ui.clientQ)}" autocomplete="off">
+     ${!q && due.length ? `<div class="sect-title"><h2>Coming due</h2><span class="pill">${due.length}</span></div><div class="card">${due.map(x => row(x.c)).join("")}</div><div class="sect-title"><h2>All clients</h2></div>` : ""}
+     <div class="card">${hits.map(row).join("") || `<div class="empty">${q ? "No client matches that." : "No clients yet."}</div>`}</div>
+     ${canEditClients() ? `<button class="btn ghost" id="c_new">＋ New client</button>` : ""}
+   </div></div>`;
+  wireNav(); const cq = $("#cq"); cq.oninput = () => { ui.clientQ = cq.value; const pos = cq.selectionStart; renderClients(); const n = $("#cq"); n.focus(); n.setSelectionRange(pos, pos); };
+  app.querySelectorAll("[data-client]").forEach(b => b.onclick = () => go("client", { clientId:b.dataset.client, clientEdit:false }));
+  const nb = $("#c_new"); if (nb) nb.onclick = () => textSheet({ title:"New client", placeholder:"Full name", saveLabel:"Create", onSave: async name => { const id = slug(name) + "-" + Date.now().toString(36).slice(-3); const nc = { id, name:name.trim(), phone:"", vehicles:[], source:"app", createdAt:Date.now() }; DB.clients.push(nc); try { await setDoc(doc(fdb, "clients", id), nc); go("client", { clientId:id, clientEdit:true }); } catch(e){ toast("Could not save: " + (e.code || e.message)); } } });
+}
+function renderClient(){
+  const c = DB.clients.find(x => x.id === ui.clientId); if (!c) return go("clients");
+  const edit = ui.clientEdit && canEditClients(); const d = dueState(c); const last = clientLastVisit(c);
+  const jobs = DB.jobs.filter(j => sameClient(j.client, c.name)).sort((a,b) => (b.date > a.date ? 1 : -1)).slice(0, 8);
+  const f = (label, id, val, ph, type) => `<div class="field"><label>${label}</label><input id="${id}" value="${esc(val || "")}" placeholder="${esc(ph || "")}" ${type ? `type="${type}"` : ""} autocomplete="off"></div>`;
+  const view = (label, val) => val ? `<div class="kvrow"><b>${label}</b><span>${esc(val)}</span></div>` : "";
+  app.innerHTML = topbar(c.name, [c.phone, last ? "last visit " + fmtDate(last) : "no visits yet"].filter(Boolean).join(" · "), `<button class="tbtn" data-go="clients">Clients</button>`) +
+   `<div class="main"><div class="stack">
+    ${d ? `<div class="card" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><div><div class="eyebrow">Next detail</div><div style="font-family:'Barlow Condensed';font-weight:700;font-size:22px">${fmtDate(d.date)}</div></div><span class="pill ${d.cls}" style="font-size:13px">${esc(d.text)}</span></div>` : ""}
+    ${edit ? `<div class="card" style="padding:14px"><div class="stack">
+      ${f("Client name", "c_name", c.name)}${f("Phone", "c_phone", c.phone, "", "tel")}${f("Address", "c_addr", c.address, "Street, city")}
+      ${f("Husband / wife / partner", "c_partner", c.partner, "Name and phone")}${f("Personal assistant / contact", "c_assist", c.assistant, "Name and phone")}
+      <div class="grid2"><div class="field"><label>Maintenance schedule</label><select id="c_cad">${CADENCES.map(([v,l]) => `<option value="${v}" ${String(c.cadenceDays || "") === v ? "selected" : ""}>${l}</option>`).join("")}</select></div><div class="field"><label>Next due (override)</label><input id="c_due" type="date" value="${esc(c.nextDue || "")}"></div></div>
+      ${f("Last visit", "c_last", c.lastVisit, "", "date")}
+      <div class="field"><label>Notes</label><textarea id="c_notes" placeholder="Gate code, where the key goes, preferences, anything the crew should know…">${esc(c.notes || "")}</textarea></div>
+      <div class="err" id="c_err"></div>
+      <div class="grid2"><button class="btn primary" id="c_save">Save client</button><button class="btn ghost" id="c_cancel">Cancel</button></div>
+    </div></div>` : `<div class="card" style="padding:12px 14px"><div class="stack" style="gap:6px">
+      ${view("Phone", c.phone)}${view("Address", c.address)}${view("Partner", c.partner)}${view("Assistant", c.assistant)}${view("Schedule", (CADENCES.find(x => x[0] === String(c.cadenceDays || "")) || ["",""])[1] === "No schedule" ? "" : (CADENCES.find(x => x[0] === String(c.cadenceDays || "")) || ["",""])[1])}${view("Last visit", last ? fmtDate(last) : "")}${c.notes ? `<div class="kvrow"><b>Notes</b><span style="white-space:pre-wrap">${esc(c.notes)}</span></div>` : ""}
+      ${!c.phone && !c.address && !c.partner && !c.assistant && !c.notes ? `<div style="color:var(--muted);font-size:13.5px">Nothing on file beyond the name and vehicles yet.</div>` : ""}
+      ${canEditClients() ? `<button class="btn ghost" id="c_edit" style="margin-top:6px">Edit client details</button>` : ""}
+    </div></div>`}
+    <div class="sect-title"><h2>Vehicles</h2><span class="pill">${(c.vehicles || []).length}</span></div>
+    <div class="card">${(c.vehicles || []).map((v, i) => `<div class="rowitem"><div class="n">${esc(v)}</div>${canEditClients() ? `<div style="display:flex;gap:6px"><button class="btn small ghost" data-vedit="${i}">Rename</button><button class="btn small ghost danger" data-vrm="${i}">Remove</button></div>` : ""}</div>`).join("") || `<div class="empty">No vehicles on file.</div>`}</div>
+    ${canEditClients() ? `<button class="btn ghost" id="c_addv">＋ Add vehicle</button>` : ""}
+    <div class="sect-title"><h2>Recent jobs</h2></div>
+    ${jobs.length ? jobs.map(jobCard).join("") : `<div class="card empty">No jobs on the board for this client yet.</div>`}
+   </div></div>`;
+  wireNav();
+  app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
+  const save = async patch => { try { await updateDoc(doc(fdb, "clients", c.id), patch); Object.assign(c, patch); } catch(e){ toast("Could not save: " + (e.code || e.message)); throw e; } };
+  const eb = $("#c_edit"); if (eb) eb.onclick = () => { ui.clientEdit = true; renderClient(); };
+  if (edit) {
+    $("#c_cancel").onclick = () => { ui.clientEdit = false; renderClient(); };
+    $("#c_save").onclick = async () => {
+      const name = $("#c_name").value.trim(); if (!name) { $("#c_err").textContent = "Name is required."; return; }
+      const patch = { name, phone:$("#c_phone").value.trim(), address:$("#c_addr").value.trim(), partner:$("#c_partner").value.trim(), assistant:$("#c_assist").value.trim(), cadenceDays: +$("#c_cad").value || null, nextDue:$("#c_due").value || "", lastVisit:$("#c_last").value || (c.lastVisit || ""), notes:$("#c_notes").value.trim() };
+      const old = c.name; try { await save(patch); } catch(e){ return; }
+      if (old !== name) { const affected = DB.jobs.filter(j => j.client === old); affected.forEach(j => { j.client = name; saveJob(j); }); if (affected.length) toast(`Renamed on ${affected.length} job${affected.length === 1 ? "" : "s"} too`); }
+      ui.clientEdit = false; toast("Saved"); renderClient();
+    };
+  }
+  app.querySelectorAll("[data-vedit]").forEach(b => b.onclick = () => { const i = +b.dataset.vedit; textSheet({ title:"Rename vehicle", value:c.vehicles[i], onSave: async v => { const vs = [...c.vehicles]; if (v) vs[i] = v; else vs.splice(i, 1); await save({ vehicles:vs }); renderClient(); } }); });
+  app.querySelectorAll("[data-vrm]").forEach(b => b.onclick = () => { const i = +b.dataset.vrm; confirmSheet({ title:"Remove vehicle?", text:`${esc(c.vehicles[i])} comes off ${esc(c.name)}'s file. Past jobs keep it.`, ok:"Remove", danger:true, onOk: async () => { const vs = [...c.vehicles]; vs.splice(i, 1); await save({ vehicles:vs }); renderClient(); } }); });
+  const av = $("#c_addv"); if (av) av.onclick = () => textSheet({ title:"Add vehicle", placeholder:"Make and model, e.g. Porsche 911 GT3", saveLabel:"Add", onSave: async v => { await save({ vehicles:[...(c.vehicles || []), v] }); renderClient(); } });
+}
+
 // ---------- team (accounts live in the shared database) ----------
 async function createCrewAccount(name, username, role, pw){ // owner creates a sign-in for someone else without leaving their own session
   const { initializeApp: init2 } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
@@ -1069,7 +1144,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v5.2 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v5.3 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
@@ -1104,7 +1179,7 @@ document.addEventListener("focusout", () => { if (pendingRemote) setTimeout(() =
 function subscribe(){
   unsubUsers = onSnapshot(collection(fdb, "users"), snap => { DB.users = snap.docs.map(d => ({ id:d.id, ...d.data() })); DB.usersReady = true; checkReady(); }, e => toast("Team sync error: " + e.code));
   unsubJobs = onSnapshot(query(collection(fdb, "jobs"), orderBy("createdAt")), snap => { DB.jobs = snap.docs.map(d => d.data()); DB.jobsReady = true; checkReady(); }, e => toast("Job sync error: " + e.code));
-  unsubClients = onSnapshot(collection(fdb, "clients"), snap => { DB.clients = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name)); DB.clientsReady = true; if (!snap.metadata.fromCache && !DB.clients.length && isOwner() && !DB.seeding) { DB.seeding = true; seedClients().then(n => { if (n) toast(`Client list loaded · ${n} clients`); }).catch(e => toast("Client list: " + (e.code || e.message))); } if (ui.screen === "newjob" && !$("#sheet")) renderNewJob(); }, e => toast("Client sync error: " + e.code));
+  unsubClients = onSnapshot(collection(fdb, "clients"), snap => { DB.clients = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name)); DB.clientsReady = true; if (!snap.metadata.fromCache && !DB.clients.length && isOwner() && !DB.seeding) { DB.seeding = true; seedClients().then(n => { if (n) toast(`Client list loaded · ${n} clients`); }).catch(e => toast("Client list: " + (e.code || e.message))); } if (ui.screen === "newjob" && !$("#sheet")) renderNewJob(); if ((ui.screen === "clients" || (ui.screen === "client" && !ui.clientEdit)) && !$("#sheet")) render(); }, e => toast("Client sync error: " + e.code));
 }
 function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); if (unsubClients) unsubClients(); unsubUsers = unsubJobs = unsubClients = null; DB.users = []; DB.jobs = []; DB.clients = []; DB.usersReady = DB.jobsReady = DB.clientsReady = false; }
 function checkReady(){
