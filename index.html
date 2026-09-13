@@ -63,6 +63,9 @@
   #app > * { flex-shrink:0; }
   .topbar { background:var(--ink); color:#FAFAFA; padding:calc(10px + var(--safe-t)) 14px 10px; }
   .topbar .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:12px; letter-spacing:.16em; }
+  .topbar .row.top, .jobtop .row.top { min-height:40px; margin-bottom:2px; }
+  .backbtn { display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:#FAFAFA; font-weight:700; font-size:15px; padding:6px 10px 6px 0; min-height:40px; margin-left:-2px; }
+  .backbtn span { font-size:26px; line-height:1; color:var(--red); margin-top:-3px; }
   .topbar .brand b { color:var(--red); }
   .topbar .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .topbar h1 { font-size:22px; font-weight:700; letter-spacing:.01em; line-height:1.1; margin-top:2px; }
@@ -703,14 +706,27 @@ function applyTheme(){ const r = document.documentElement; if (DB.theme === "lig
 const NAV_KEYS = ["screen","jobId","pane","histFilter","histDetail","clientId","clientEdit","editUser","clientQ","newjobFrom"];
 const navState = () => Object.fromEntries(NAV_KEYS.map(k => [k, ui[k]]));
 let navDir = "forward";
+// The app keeps its own trail of screens. Back = one step to where you came from, with that screen's scroll position.
+// Screens you are done with (a New job form once the car is on the board, a job once it is finished) are replaced, never revisited.
+const navStack = [];
+const snapAll = () => { const m = $(".main"); const panes = {}; document.querySelectorAll(".pane").forEach(p => panes[p.dataset.code] = p.scrollTop); return { main: m ? m.scrollTop : 0, panes }; };
 function go(screen, extra, opts){
   const o = opts || {}; if (screen !== "job") releaseWake();
+  if (!o.back && !o.replace && ui.screen !== "login" && DB.ready) { navStack.push({ ui:navState(), scroll:snapAll() }); if (navStack.length > 25) navStack.shift(); }
   if (screen === "job" && extra && extra.jobId !== ui.jobId) { ui.open = new Set(); ui.closed = new Set(); }
   Object.assign(ui, {screen, sheet:false}, extra || {}); closeSheet(); ui.fresh = true; navDir = o.back ? "back" : "forward";
-  if (!o.back) { try { history.pushState({ ui:navState() }, ""); } catch(e){} }
   render(); ui.fresh = false;
 }
-window.addEventListener("popstate", e => { const st = e.state && e.state.ui; if (!st) return; if ($("#sheet")) { closeSheet(); } if (st.screen !== "job") releaseWake(); Object.assign(ui, st, { sheet:false }); ui.fresh = true; navDir = "back"; render(); ui.fresh = false; });
+function appBack(){
+  if ($("#sheet")) { closeSheet(); return; }
+  const entry = navStack.pop();
+  if (!entry || entry.ui.screen === "login") { if (ui.screen !== "home") go("home", null, { back:true }); return; }
+  releaseWake(); Object.assign(ui, entry.ui, { sheet:false }); closeSheet(); ui.fresh = true; navDir = "back"; render(); ui.fresh = false;
+  const m = $(".main"); if (m) m.scrollTop = entry.scroll.main; document.querySelectorAll(".pane").forEach(p => { if (entry.scroll.panes[p.dataset.code] != null) p.scrollTop = entry.scroll.panes[p.dataset.code]; });
+}
+// The phone's edge-swipe / hardware back triggers exactly one app step, then re-arms.
+let armed = false; function armHistory(){ if (armed) return; armed = true; try { history.replaceState({ base:1 }, ""); history.pushState({ trap:1 }, ""); } catch(e){} }
+window.addEventListener("popstate", () => { if (!armed) return; appBack(); try { history.pushState({ trap:1 }, ""); } catch(e){} });
 // scroll memory: a redraw of the same screen keeps its place; only a real navigation starts at the top
 function snapScroll(){ if (ui.fresh) return null; const m = $(".main"); const panes = {}; document.querySelectorAll(".pane").forEach(p => panes[p.dataset.code] = p.scrollTop); return { main: m ? m.scrollTop : 0, panes }; }
 function restoreScroll(sc){ if (!sc) { const m = $(".main"); if (m) { m.classList.add(navDir === "back" ? "enter-back" : "enter"); setTimeout(() => m.classList.remove("enter", "enter-back"), 220); } return; } const m = $(".main"); if (m) m.scrollTop = sc.main; document.querySelectorAll(".pane").forEach(p => { if (sc.panes[p.dataset.code] != null) p.scrollTop = sc.panes[p.dataset.code]; }); }
@@ -760,6 +776,13 @@ function pickerSheet(o){ // {title, items:[{label, sub}], placeholder, newLabel,
   draw(); setTimeout(() => q.focus(), 120);
 }
 
+function animateScroll(el, to, ms){ // eased scroll inside a pane (the browser's smooth scroll stutters mid-layout)
+  const from = el.scrollTop; const max = el.scrollHeight - el.clientHeight; to = Math.max(0, Math.min(max, to)); const d = to - from; if (Math.abs(d) < 2) return;
+  const t0 = performance.now(); const ease = x => 1 - Math.pow(1 - x, 3);
+  const step = () => { const k = Math.min(1, (performance.now() - t0) / ms); el.scrollTop = from + d * ease(k); if (k < 1) setTimeout(step, 16); };
+  step();
+}
+
 // ---------- storage health ----------
 function storageWarning(){
   let framed = false; try { framed = window.top !== window.self; } catch(e){ framed = true; }
@@ -782,8 +805,8 @@ function renderScreen(){
 }
 // in-place redraws (same screen, keep the scroll position)
 const redraw = fn => { const sc = snapScroll(); fn(); restoreScroll(sc); };
-function topbar(title, sub, right){ return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div></div>`; }
-function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
+function topbar(title, sub, right){ const back = ui.screen !== "home" ? `<button class="backbtn" id="topback"><span>‹</span> Back</button>` : `<div class="brand"><b>3X</b> DETAILING · JOB BOARD</div>`; return `<div class="topbar"><div class="row top"><div>${back}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`; }
+function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); const tb = $("#topback"); if (tb) tb.onclick = appBack; }
 
 // ---------- first-run setup + login (Firebase) ----------
 let splashT = null;
@@ -883,8 +906,8 @@ function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) retu
 function renderNewJob(){
   const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", serviceIds:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
   const people = DB.users; const lists = listsForServices(nj.serviceIds); const groups = [...new Set(SERVICES.map(s => s.group))];
-  const backTo = () => { const from = ui.newjobFrom && DB.jobs.find(j => j.id === ui.newjobFrom && j.status === "active"); ui.newjob = null; ui.newjobFrom = null; if (from) go("job", { jobId:from.id, pane:0 }, { back:true }); else go("home", null, { back:true }); };
-  app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" id="n_cancel_top">Cancel</button>`) +
+  const backTo = () => { ui.newjob = null; ui.newjobFrom = null; appBack(); };
+  app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", "") +
    `<div class="main"><div class="stack">
     <div class="card" style="padding:14px"><div class="stack">
       <div class="field"><label>Client</label><button class="pick ${nj.client ? "set" : ""}" id="n_client">${nj.client ? esc(nj.client) : "Choose client"}<span class="chev">▾</span></button></div>
@@ -897,7 +920,7 @@ function renderNewJob(){
     <div class="card" style="padding:12px"><div class="stack">${groups.map(g => `<div class="eyebrow">${esc(g)}</div><div class="chips">${SERVICES.filter(s => s.group === g).map(s => `<button class="choice ${nj.serviceIds.includes(s.id) ? "on" : ""}" data-svc="${s.id}">${esc(s.name)}<small>${esc(s.price)} · ${s.lists.map(c => LISTS[c].title).join(" + ")}${s.lists.some(c => LISTS[c].generic) ? " (timed only, no SOP yet)" : ""}</small></button>`).join("")}</div>`).join("")}</div></div>
     <div class="err" id="n_err"></div></div></div>
    <div class="actionbar"><button class="narrow" id="n_cancel">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
-  wireNav(); $("#n_cancel").onclick = backTo; $("#n_cancel_top").onclick = backTo;
+  wireNav(); $("#n_cancel").onclick = backTo; $("#topback").onclick = backTo;
   const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.leadId = $("#n_lead").value; };
   $("#n_client").onclick = () => { readForm(); pickerSheet({ title:"Client", items:DB.clients.map(c => ({ label:c.name, sub:c.vehicles.length ? `${c.vehicles.length} vehicle${c.vehicles.length === 1 ? "" : "s"} on file` : "" })), placeholder:"Type a name…", newLabel:"new client", onPick: v => { if (v !== nj.client) nj.vehicle = ""; nj.client = v; redraw(renderNewJob); } }); };
   $("#n_vehicle").onclick = () => { readForm(); if (!nj.client) return; pickerSheet({ title:`${esc(nj.client)} · vehicle`, items:clientVehicles(nj.client).map(v => ({ label:v })), placeholder:"Type a make and model…", newLabel:"new vehicle", onPick: v => { nj.vehicle = v; redraw(renderNewJob); } }); };
@@ -910,7 +933,7 @@ function renderNewJob(){
     if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
     const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
     listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"", runs:[] });
-    learnClient(job.client, job.vehicle); DB.jobs.push(job); saveJob(job); ui.newjob = null; ui.newjobFrom = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
+    learnClient(job.client, job.vehicle); DB.jobs.push(job); saveJob(job); ui.newjob = null; ui.newjobFrom = null; toast("On the board"); go("job", {jobId:job.id, pane:0}, { replace:true });
   };
 }
 function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob", { newjobFrom:job.id }); }
@@ -922,7 +945,7 @@ function renderJob(){
   const lists = jobLists(job); const p = jobProgress(job); if (ui.pane >= lists.length) ui.pane = 0;
   const crew = `${esc(job.client)} · ${fmtDate(job.date)} · ${esc(userName(job.leadId))}${job.techIds.length ? " + " + job.techIds.map(userName).map(esc).join(", ") : ""}`;
   app.innerHTML = `
-   <div class="jobtop"><div class="row"><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><div style="display:flex;gap:6px"><button class="tbtn" id="anothercar">+ Car</button><button class="tbtn" data-go="home">Board</button></div></div>
+   <div class="jobtop"><div class="row top"><button class="backbtn" id="topback"><span>‹</span> Back</button><div style="display:flex;gap:6px"><button class="tbtn" id="anothercar">+ Car</button></div></div>
      ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)}<small class="num">${jobProgress(j).pct}%</small></button>`).join("")}</div><div class="sub">${crew}</div>` : `<h1>${esc(job.vehicle)}</h1><div class="sub">${crew}</div>`}
      <div class="stats"><button class="st" id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to start"}</div></button><div class="st"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div><div class="st"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:13px;color:#8E8E99">/${p.t}</span></div></div></div></div>
    <div class="main noscroll">
@@ -994,7 +1017,7 @@ function wirePane(job, pane){
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
     if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); } else { saveJob(job); refreshPane(job, code); }
-    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 160);
+    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => { const pane = next.closest(".pane"); const y = next.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 10; animateScroll(pane, y, 420); }, 140);
   });
   pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
@@ -1027,7 +1050,7 @@ function finishJob(job){
   const done = () => {
     if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
     job.finishedAt = Date.now(); job.status = "done"; jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
-    saveJob(job); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id});
+    saveJob(job); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id}, { replace: ui.screen === "job" && ui.jobId === job.id });
     const n = DB.jobs.filter(j => j.status === "done").length; if (n > 0 && n % 5 === 0 && DB.nudged !== n) { DB.nudged = n; save(); setTimeout(() => confirmSheet({ title:"Back up your data", text:`${n} jobs finished on this phone. Everything lives here until the sync exists — take 10 seconds to export a backup.`, ok:"Export backup now", onOk: exportBackup }), 600); }
   };
   if (p.d < p.t) textSheet({ title:"Finish with open phases?", label:`<em>${p.t - p.d}</em> phase${p.t - p.d === 1 ? "" : "s"} not marked`, placeholder:"Why is the job being closed early? (goes on the report)", saveLabel:"Finish anyway", onSave: v => { job.finishNote = v; done(); } });
@@ -1053,7 +1076,7 @@ function renderReport(){
        pausesInPhase(pauses, st, pi).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join(""); }).join("")}
      ${pausesInPhase(pauses, st, -1).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused after the last phase · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join("")}</div>`;
   }).join("");
-  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" id="r_more">⋯</button><button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" id="r_more">⋯</button>`) +
    `<div class="main"><div class="report stack">
      <div class="head"><h2>${esc(job.vehicle)}</h2><div class="sub">${esc(job.client)} · ${fmtDate(job.date)}</div>
        <div class="kv num"><b>Service</b><span>${jobServiceNames(job).map(esc).join(" + ")}</span><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>On site</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
@@ -1066,11 +1089,11 @@ function renderReport(){
   wireNav(); const text = summaryText(job);
   $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title:`3X Job — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
   $("#copy").onclick = () => copyText(text);
-  const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0}, { back:true });
+  const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
   $("#r_more").onclick = () => { const sh = openSheet("More", `<div class="notegroup"><div class="reasons"><button id="m_full">Copy full phase timing as text</button>${job.status === "active" ? `<button id="m_back">Back to checklists</button>` : ""}${job.status === "done" && ["owner","lead"].includes((me() || {}).role) ? `<button id="m_del" style="color:var(--bad)">Delete this job</button>` : ""}</div></div>`);
     $("#m_full").onclick = () => { sh.close(); copyText(fullText(job)); };
-    const mb = $("#m_back"); if (mb) mb.onclick = () => { sh.close(); go("job", {jobId:job.id, pane:0}, { back:true }); };
-    const md = $("#m_del"); if (md) md.onclick = () => { sh.close(); confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed for everyone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { deleteJob(job.id); go("history", null, { back:true }); } }); }; };
+    const mb = $("#m_back"); if (mb) mb.onclick = () => { sh.close(); go("job", {jobId:job.id, pane:0}); };
+    const md = $("#m_del"); if (md) md.onclick = () => { sh.close(); confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed for everyone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { deleteJob(job.id); appBack(); } }); }; };
 }
 async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ textSheet({ title:"Copy this", value:t, saveLabel:"Done", allowEmpty:true, onSave: () => {} }); } }
 
@@ -1091,7 +1114,7 @@ function renderHistory(){
   else if (det === "avg") detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px;display:flex;justify-content:space-between"><b>How the average is built</b><span class="s">${timed.length} jobs · ${fmtD(avg)} avg</span></div>${timed.map(j => jobLine(j, jobTotal(j))).join("")}</div>`;
   else if (det === "fastest" && fastest) detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px"><b>Fastest job</b></div>${jobLine(fastest, jobTotal(fastest))}</div>`;
   else if (det && det.startsWith("list:")) { const c = det.slice(5); const a = byList[c] || []; detail = `<div class="card"><div class="lt" style="padding:10px 14px 4px;display:flex;justify-content:space-between"><b>${esc(LISTS[c].title)} runs</b><span class="s">${a.length} · ${fmtD(a.reduce((x,y) => x+y.ms, 0)/(a.length||1))} avg</span></div>${a.sort((x,y) => y.job.finishedAt - x.job.finishedAt).map(r => jobLine(r.job, r.ms)).join("")}</div>`; }
-  app.innerHTML = topbar("History & stats", `${done.length} finished job${done.length === 1 ? "" : "s"} · tap any number to see what's behind it`, `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("History & stats", `${done.length} finished job${done.length === 1 ? "" : "s"} · tap any number to see what's behind it`, "") +
    `<div class="main"><div class="stack">
      <div class="seg"><button class="${!mine ? "on" : ""}" data-f="all">Whole team</button><button class="${mine ? "on" : ""}" data-f="mine">My jobs</button></div>
      <div class="statrow"><button class="stat ${det === "jobs" ? "on" : ""}" data-det="jobs"><div class="v num">${done.length}</div><div class="k">Jobs finished</div></button><button class="stat ${det === "avg" ? "on" : ""}" data-det="avg"><div class="v num">${fmtD(avg)}</div><div class="k">Avg time on site</div></button><button class="stat ${det === "fastest" ? "on" : ""}" data-det="fastest"><div class="v num">${fastest ? fmtD(jobTotal(fastest)) : "—"}</div><div class="k">Fastest job${fastest ? " · " + esc(fastest.vehicle) : ""}</div></button></div>
@@ -1120,7 +1143,7 @@ function renderClients(){
   const hits = all.filter(c => !q || words.every(w => c.name.toLowerCase().split(/[^a-z0-9]+/).some(p => p.startsWith(w))) || (c.vehicles || []).some(v => v.toLowerCase().includes(q)));
   const due = all.map(c => ({ c, d:dueState(c) })).filter(x => x.d && x.d.days <= 14).sort((a,b) => a.d.days - b.d.days);
   const row = c => { const d = dueState(c); return `<button class="rowitem" data-client="${c.id}"><div style="min-width:0"><div class="n">${esc(c.name)}${d ? ` <span class="pill ${d.cls}">${esc(d.text)}</span>` : ""}</div><div class="s">${(c.vehicles || []).length ? esc((c.vehicles || []).slice(0,3).join(" · ")) + ((c.vehicles || []).length > 3 ? ` · +${c.vehicles.length - 3}` : "") : "no vehicles on file"}${c.phone ? ` · ${esc(c.phone)}` : ""}</div></div><span class="chev" style="color:var(--muted)">›</span></button>`; };
-  app.innerHTML = topbar("Clients", `${all.length} on file · ${canEditClients() ? "tap one to view or edit" : "tap one to view"}`, `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Clients", `${all.length} on file · ${canEditClients() ? "tap one to view or edit" : "tap one to view"}`, "") +
    `<div class="main"><div class="stack">
      <input class="pickq" id="cq" placeholder="Search by name or car…" value="${esc(ui.clientQ)}" autocomplete="off">
      ${!q && due.length ? `<div class="sect-title"><h2>Coming due</h2><span class="pill">${due.length}</span></div><div class="card">${due.map(x => row(x.c)).join("")}</div><div class="sect-title"><h2>All clients</h2></div>` : ""}
@@ -1137,7 +1160,7 @@ function renderClient(){
   const jobs = DB.jobs.filter(j => sameClient(j.client, c.name)).sort((a,b) => (b.date > a.date ? 1 : -1)).slice(0, 8);
   const f = (label, id, val, ph, type) => `<div class="field"><label>${label}</label><input id="${id}" value="${esc(val || "")}" placeholder="${esc(ph || "")}" ${type ? `type="${type}"` : ""} autocomplete="off"></div>`;
   const view = (label, val) => val ? `<div class="kvrow"><b>${label}</b><span>${esc(val)}</span></div>` : "";
-  app.innerHTML = topbar(c.name, [c.phone, last ? "last visit " + fmtDate(last) : "no visits yet"].filter(Boolean).join(" · "), `<button class="tbtn" data-go="clients">Clients</button>`) +
+  app.innerHTML = topbar(c.name, [c.phone, last ? "last visit " + fmtDate(last) : "no visits yet"].filter(Boolean).join(" · "), "") +
    `<div class="main"><div class="stack">
     ${d ? `<div class="card" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><div><div class="eyebrow">Next detail</div><div style="font-family:'Barlow Condensed';font-weight:700;font-size:22px">${fmtDate(d.date)}</div></div><span class="pill ${d.cls}" style="font-size:13px">${esc(d.text)}</span></div>` : ""}
     ${edit ? `<div class="card" style="padding:14px"><div class="stack">
@@ -1192,7 +1215,7 @@ function renderTeam(){
   if (!isOwner()) return go("home"); const ed = ui.editUser;
   const stats = u => { const led = DB.jobs.filter(j => j.status === "done" && j.leadId === u.id && jobTotal(j) != null); const worked = DB.jobs.filter(j => j.status === "done" && j.techIds.includes(u.id)).length; const avg = led.length ? led.reduce((a,j) => a + jobTotal(j), 0)/led.length : null; return `${led.length} led${worked ? ` · ${worked} as tech` : ""}${avg ? ` · ${fmtD(avg)} avg` : ""}`; };
   const users = DB.users.filter(u => u.active !== false);
-  app.innerHTML = topbar("Team", "Same sign-in on every phone", `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Team", "Same sign-in on every phone", "") +
    `<div class="main"><div class="stack"><div class="card">${users.map(u => `<div class="rowitem"><div><div class="n">${esc(u.name)} <span class="pill ${u.role === "owner" ? "dark" : ""}">${ROLES[u.role]}</span></div><div class="s">@${esc(u.username)} · ${stats(u)}</div></div><button class="btn small ghost" data-edit="${u.id}">${ed === u.id ? "Close" : "Edit"}</button></div>
         ${ed === u.id ? `<div class="editrow"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="e_name" value="${esc(u.name)}"></div><div class="field"><label>Role</label><select id="e_role" ${u.role === "owner" ? "disabled" : ""}>${Object.entries(ROLES).filter(([k]) => k !== "owner" || u.role === "owner").map(([k,v]) => `<option value="${k}" ${u.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div></div><div class="field"><label>Username</label><input id="e_user" value="${esc(u.username)}" disabled></div><div class="err" id="e_err"></div><div class="grid2"><button class="btn primary" id="e_save">Save changes</button><button class="btn ghost" id="e_pw">Reset password</button></div>${u.role !== "owner" ? `<button class="btn ghost danger" id="e_rm">Remove ${esc(u.name.split(" ")[0])} from the team</button>` : ""}</div></div>` : ""}`).join("")}</div>
      <div class="sect-title"><h2>Add a team member</h2></div>
@@ -1217,12 +1240,12 @@ function renderTeam(){
 async function exportBackup(){ const text = JSON.stringify({ v:3, users:DB.users, jobs:DB.jobs, exportedAt:Date.now() }); if (navigator.share) { try { await navigator.share({ title:"3X Job Board backup", text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); }
 function renderSettings(){
   const u = me();
-  app.innerHTML = topbar("Settings", `Signed in as ${esc(u.name)}`, `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Settings", `Signed in as ${esc(u.name)}`, "") +
    `<div class="main"><div class="stack">
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v6 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v6.1 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
@@ -1268,14 +1291,14 @@ function checkReady(){
 }
 
 // ---------- boot ----------
-applyTheme(); renderSplash(); try { history.replaceState({ ui:navState() }, ""); } catch(e){}
+applyTheme(); renderSplash(); armHistory();
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 onAuthStateChanged(auth, async user => {
   if (user) { DB.session = { userId:user.uid }; DB.ready = false; renderSplash("Loading your board…"); unsubscribe(); subscribe(); }
   else { unsubscribe(); DB.session = null; ui.screen = "login"; try { const s = await getDoc(doc(fdb, "meta", "setup")); DB.setupDone = s.exists(); } catch(e){ DB.setupDone = true; } DB.ready = true; render(); }
 });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(() => {});
-window.__db = () => DB; window.__app = { go, render, ui, DB };
+window.__db = () => DB; window.__app = { go, render, ui, DB, animateScroll };
 </script>
 </body>
 </html>
