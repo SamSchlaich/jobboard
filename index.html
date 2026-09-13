@@ -724,9 +724,12 @@ function appBack(){
   releaseWake(); Object.assign(ui, entry.ui, { sheet:false }); closeSheet(); ui.fresh = true; navDir = "back"; render(); ui.fresh = false;
   const m = $(".main"); if (m) m.scrollTop = entry.scroll.main; document.querySelectorAll(".pane").forEach(p => { if (entry.scroll.panes[p.dataset.code] != null) p.scrollTop = entry.scroll.panes[p.dataset.code]; });
 }
-// The phone's edge-swipe / hardware back triggers exactly one app step, then re-arms.
-let armed = false; function armHistory(){ if (armed) return; armed = true; try { history.replaceState({ base:1 }, ""); history.pushState({ trap:1 }, ""); } catch(e){} }
-window.addEventListener("popstate", () => { if (!armed) return; appBack(); try { history.pushState({ trap:1 }, ""); } catch(e){} });
+// Edge swipe (from the left edge, rightwards) = one app step back. Handled in-app; no browser history is used, so Safari never shows its blank snapshot.
+(() => { let sx = null, sy = null, fired = false;
+  document.addEventListener("touchstart", e => { const t = e.touches[0]; sx = t.clientX <= 24 ? t.clientX : null; sy = t.clientY; fired = false; }, { passive:true });
+  document.addEventListener("touchmove", e => { if (sx == null || fired) return; const t = e.touches[0]; const dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); if (dx > 70 && dy < 50 && ui.screen !== "home") { fired = true; appBack(); } }, { passive:true });
+  document.addEventListener("touchend", () => { sx = null; }, { passive:true });
+})();
 // scroll memory: a redraw of the same screen keeps its place; only a real navigation starts at the top
 function snapScroll(){ if (ui.fresh) return null; const m = $(".main"); const panes = {}; document.querySelectorAll(".pane").forEach(p => panes[p.dataset.code] = p.scrollTop); return { main: m ? m.scrollTop : 0, panes }; }
 function restoreScroll(sc){ if (!sc) { const m = $(".main"); if (m) { m.classList.add(navDir === "back" ? "enter-back" : "enter"); setTimeout(() => m.classList.remove("enter", "enter-back"), 220); } return; } const m = $(".main"); if (m) m.scrollTop = sc.main; document.querySelectorAll(".pane").forEach(p => { if (sc.panes[p.dataset.code] != null) p.scrollTop = sc.panes[p.dataset.code]; }); }
@@ -776,8 +779,9 @@ function pickerSheet(o){ // {title, items:[{label, sub}], placeholder, newLabel,
   draw(); setTimeout(() => q.focus(), 120);
 }
 
-function animateScroll(el, to, ms){ // eased scroll inside a pane (the browser's smooth scroll stutters mid-layout)
+function animateScroll(el, to, ms){ // glide inside a pane
   const from = el.scrollTop; const max = el.scrollHeight - el.clientHeight; to = Math.max(0, Math.min(max, to)); const d = to - from; if (Math.abs(d) < 2) return;
+  if (!document.hidden && "scrollBehavior" in document.documentElement.style) { el.scrollTo({ top:to, behavior:"smooth" }); return; }
   const t0 = performance.now(); const ease = x => 1 - Math.pow(1 - x, 3);
   const step = () => { const k = Math.min(1, (performance.now() - t0) / ms); el.scrollTop = from + d * ease(k); if (k < 1) setTimeout(step, 16); };
   step();
@@ -1017,7 +1021,7 @@ function wirePane(job, pane){
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
     if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); } else { saveJob(job); refreshPane(job, code); }
-    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => { const pane = next.closest(".pane"); const y = next.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 10; animateScroll(pane, y, 420); }, 140);
+    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => { const pane = next.closest(".pane"); const y = next.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 10; animateScroll(pane, y, 420); }, 200);
   });
   pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
@@ -1245,7 +1249,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v6.1 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v6.2 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
@@ -1291,7 +1295,7 @@ function checkReady(){
 }
 
 // ---------- boot ----------
-applyTheme(); renderSplash(); armHistory();
+applyTheme(); renderSplash();
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 onAuthStateChanged(auth, async user => {
   if (user) { DB.session = { userId:user.uid }; DB.ready = false; renderSplash("Loading your board…"); unsubscribe(); subscribe(); }
