@@ -341,9 +341,9 @@ const closeout = n => [n, "VEHICLE SECURING & SITE CLOSE-OUT", "~5 min · the jo
 const LISTS = {
  SOC001: { code:"SOC001", sop:"SOP001", title:"Interior Maintenance", short:"Interior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
-   "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
-   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)",
-   "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
+   "Table staged for display: foam cannon filled, IK foamer, extension wand, both tool pouches · fresh mitts & towels staged",
+   "Bucket filled: ½ water + splash of snow foam, pressurized until sudsy",
+   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)"]],
   ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~1–2 min",[
    "Pre-existing damage / heavy staining photographed → sent to Sam BEFORE starting",
    "Game plan set: light vs heavy interior cleaner · air compressor? · condition fee needed? (ask early)"]],
@@ -362,16 +362,18 @@ const LISTS = {
   ["PHASE 6","INTERIOR WINDOWS","3–7 min max · shade/cool only",[
    "All interior glass wiped edge-to-edge + buffed streak-free (angle-check in light)",
    "Touchscreens & displays cleaned — spray towel, never the screen"]],
-  ["PHASE 7","SEATS & WRAP-UP","5–8 min",[
+  ["PHASE 7","SEATS, WRAP-UP & FINAL VACUUM","5–8 min",[
    "All seats top-to-bottom incl. sides: dust if clean · wipe+buff if dirty · scrub pad if stained",
+   "Final vacuum if necessary — anything knocked loose during wipe-down or seat work picked up",
    "Belongings returned neatly to passenger seat",
    "Final visual scan — anything missed gets redone NOW"]],
   closeout("PHASE 8")
  ]},
  SOC002: { code:"SOC002", sop:"SOP002", title:"Exterior Maintenance", short:"Exterior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
-   "Table staged for display: foams, cannon, IK foamer, extension wand, both tool pouches",
-   "Generator on · pressure washer, water pump plugged in · bucket sudsed & pressurized"]],
+   "Table staged for display: foam cannon filled, IK foamer, extension wand, both tool pouches · fresh mitts & towels staged",
+   "Bucket filled: ½ water + splash of snow foam, pressurized until sudsy",
+   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)"]],
   ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~1–2 min",[
    "Pre-existing damage photographed (scratches/dents/chips/curbs) → sent to Sam BEFORE starting",
    "Game plan set: full foam pre-wash or thorough pre-rinse only? · shade & surface temps checked"]],
@@ -404,8 +406,9 @@ const LISTS = {
  ]},
  SOC003: { code:"SOC003", sop:"SOP003", title:"Interior Deep Clean", short:"Interior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
-   "Table staged for display · generator on · vacuum, pressure washer, water pump + AIR COMPRESSOR plugged in",
-   "Bucket: ½ water + splash of snow foam, pressurized until sudsy"]],
+   "Table staged for display: foam cannon filled, IK foamer, extension wand, both tool pouches · fresh mitts & towels staged",
+   "Bucket filled: ½ water + splash of snow foam, pressurized until sudsy",
+   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)"]],
   ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~2–3 min",[
    "Pre-existing damage photographed → sent to Sam BEFORE starting",
    "Game plan: headliner spots? stained fabric? pet hair (+$50)? heavy staining upcharge? — raised with client EARLY"]],
@@ -437,8 +440,9 @@ const LISTS = {
  ]},
  SOC004: { code:"SOC004", sop:"SOP004", title:"Exterior Deep Clean", short:"Exterior", phases:[
   ["PHASE 1","UNLOAD & SETUP","~5 min",[
-   "Table staged · generator on · pressure washer + water pump plugged in · bucket sudsed & pressurized",
-   "LARGE stack of fresh wash mitts staged (deep clean burns through mitts)"]],
+   "Table staged for display: foam cannon filled, IK foamer, extension wand, both tool pouches · fresh mitts & towels staged",
+   "Bucket filled: ½ water + splash of snow foam, pressurized until sudsy",
+   "Generator on · vacuum, pressure washer, water pump plugged in (+ air compressor if needed)"]],
   ["PHASE 2","PRE-WORK INSPECTION & GAME PLAN","~2–3 min",[
    "Pre-existing damage photographed (scratches/dents/chips/curbs) → sent to Sam BEFORE starting",
    "Contamination mapped: bugs, tar, water spots, brake dust · beyond-wash issues flagged for decon upsell"]],
@@ -661,8 +665,12 @@ function overruns(job){ const out = []; jobLists(job).forEach(code => phaseStats
 function pausesInPhase(pauses, st, pi){ const owner = p => { for (let i = 0; i < st.length; i++) { const s = st[i]; if (s.startAt == null) return -1; if (p.from >= s.startAt && (s.endAt == null || p.from < s.endAt)) return i; } return -1; }; return pauses.filter(p => owner(p) === pi); }
 
 // --- shared setup: one Unload & Setup per stop, same client ---
-const SHARED_PHASE = "UNLOAD & SETUP";
+const SHARED_PHASE = "UNLOAD & SETUP"; const CLOSEOUT_PHASE = "VEHICLE SECURING & SITE CLOSE-OUT";
 const hasSharedSetup = code => LISTS[code].phases[0] && LISTS[code].phases[0][1] === SHARED_PHASE;
+const closeoutIndex = code => LISTS[code].phases.findIndex(p => p[1] === CLOSEOUT_PHASE);
+function markCloseoutEverywhere(ts, job){ // one securing & close-out per car: marks it on this car's other checklists
+  let n = 0; jobLists(job).forEach(c => { const ci = closeoutIndex(c); if (ci >= 0 && !job.lists[c].phases[ci]) { job.lists[c].phases[ci] = ts; n++; } }); return n;
+}
 const normName = s => String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 function sameClient(a, b){ const x = normName(a), y = normName(b); if (!x || !y) return false; if (x === y) return true; const fx = x.split(" ")[0], fy = y.split(" ")[0]; return fx.length >= 3 && fx === fy; }
 function markSetupEverywhere(ts, job){ let n = 0; DB.jobs.filter(j => j.status === "active" && j.arrivedAt && j.date === job.date && (j.id === job.id || sameClient(j.client, job.client))).forEach(j => jobLists(j).forEach(c => { if (hasSharedSetup(c) && !j.lists[c].phases[0]) { j.lists[c].phases[0] = Math.max(ts, j.arrivedAt); n++; } })); return n; }
@@ -996,7 +1004,7 @@ function renderPane(job, code){
      const body = open ? `${ph[4] ? `<div class="policy">${esc(ph[4])}</div>` : ""}
        <div class="steps">${ph[3].map((txt, ii) => { const fl = L.flags[pi+"_"+ii]; return `<div class="step"><div class="dot"></div><div class="txt">${esc(txt)}${fl ? `<div class="flag">⚑ ${esc(fl)}</div>` : ""}</div></div>`; }).join("")}${L.flags[pi+"_g"] ? `<div class="flag">⚑ ${esc(L.flags[pi+"_g"])}</div>` : ""}</div>
        <div class="phasefoot"><button class="notebtn ${hasNotes ? "has" : ""}" data-note="${code}:${pi}">${hasNotes ? "⚑ Notes" : "＋ Note / flag"}</button><button class="phasebtn ${s.complete ? "" : (s.current ? "" : "wait")}" data-phase="${code}:${pi}">${s.complete ? `✓ Done ${fmtT(s.endAt)} · change` : `${esc(ph[0].replace("PHASE ", "Phase "))} done ✓`}</button></div>` : "";
-     return `<div class="phase ${s.complete ? "done" : ""} ${s.current ? "current" : ""}"><button class="band" data-toggle="${key}"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${open ? esc(ph[2]) + (pi === 0 && hasSharedSetup(code) ? " · shared with this client's other cars" : "") : `${ph[3].length} step${ph[3].length === 1 ? "" : "s"}${hasNotes ? " · ⚑ notes" : ""}`}</small></div><div class="r">${right}</div><div class="chev">${open ? "▾" : "▸"}</div></button>${body}</div>`; }).join("")}
+     return `<div class="phase ${s.complete ? "done" : ""} ${s.current ? "current" : ""}"><button class="band" data-toggle="${key}"><div class="l"><b><em>${esc(ph[0])}</em> · ${esc(ph[1])}</b><small>${open ? esc(ph[2]) + (pi === 0 && hasSharedSetup(code) ? " · shared with this client's other cars" : "") + (ph[1] === CLOSEOUT_PHASE ? " · one close-out covers every checklist on this car" : "") : `${ph[3].length} step${ph[3].length === 1 ? "" : "s"}${hasNotes ? " · ⚑ notes" : ""}`}</small></div><div class="r">${right}</div><div class="chev">${open ? "▾" : "▸"}</div></button>${body}</div>`; }).join("")}
    ${S.footer ? `<div class="hint">➜ ${esc(S.footer)}</div>` : ""}
    <div class="listnotes"><label>${esc(S.title)} notes</label><textarea data-lnotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(L.notes)}</textarea></div></div>`;
 }
@@ -1020,7 +1028,9 @@ function wirePane(job, pane){
     if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; saveJob(job); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); saveJob(job); refreshPane(job, code); } }); return; }
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
-    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); } else { saveJob(job); refreshPane(job, code); }
+    if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); }
+    else if (ph[1] === CLOSEOUT_PHASE) { const n = markCloseoutEverywhere(ts, job); if (n) toast(`Close-out also marked on ${n} other checklist${n === 1 ? "" : "s"} for this car`); saveJob(job); jobLists(job).forEach(c => refreshPane(job, c)); }
+    else { saveJob(job); refreshPane(job, code); }
     const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => { const pane = next.closest(".pane"); const y = next.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 10; animateScroll(pane, y, 420); }, 200);
   });
   pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
@@ -1249,7 +1259,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v6.2 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v6.3 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
