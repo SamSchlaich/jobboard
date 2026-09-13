@@ -48,6 +48,15 @@
   .num { font-variant-numeric: tabular-nums; }
   .eyebrow { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
   :focus-visible { outline:2px solid var(--red); outline-offset:2px; }
+  button, .jobcard, .band, .step, .pickitem, .rowitem, .carchip, .tab, .choice, .stat { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .btn, .tbtn, .choice, .pickitem, .rowitem, .stat, .phasebtn, .notebtn, .carchip, .reasons button, .sw-actions button, .actionbar button { transition:transform .08s ease, filter .08s ease, opacity .08s ease; }
+  .btn:active, .tbtn:active, .choice:active, .pickitem:active, .reasons button:active, .actionbar button:active, .phasebtn:active, .notebtn:active, .carchip:active, .sw-actions button:active { transform:scale(.97); filter:brightness(.92); }
+  .rowitem:active, .stat:active, .band:active { filter:brightness(.9); }
+  .jobcard:active { filter:brightness(.94); }
+  .main.enter { animation:screenIn .18s ease-out; }
+  @keyframes screenIn { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
+  .main.enter-back { animation:screenBack .18s ease-out; }
+  @keyframes screenBack { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
 
   /* ---------- app frame ---------- */
   #app { display:flex; flex-direction:column; height:100dvh; }
@@ -58,7 +67,7 @@
   .topbar .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .topbar h1 { font-size:22px; font-weight:700; letter-spacing:.01em; line-height:1.1; margin-top:2px; }
   .topbar .sub { color:#A9A9B3; font-size:12.5px; margin-top:2px; }
-  .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 11px; font-weight:600; font-size:13px; white-space:nowrap; min-height:36px; }
+  .topbar .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 12px; font-weight:600; font-size:13px; white-space:nowrap; min-height:40px; }
   .topbar .who { display:inline-flex; align-items:center; gap:6px; background:#232328; border:1px solid #33333A; border-radius:999px; padding:3px 10px 3px 4px; font-size:12.5px; font-weight:600; color:#D6D6DC; }
   .topbar .who i { width:22px; height:22px; border-radius:50%; background:var(--red); color:#fff; display:grid; place-items:center; font-style:normal; font-weight:800; font-size:11px; }
   .main { flex:1 1 auto !important; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px calc(96px + var(--safe-b)); }
@@ -81,7 +90,7 @@
   .btn { padding:12px 14px; border:none; border-radius:10px; font-weight:700; font-size:15px; background:var(--chip); color:var(--text); }
   .btn.primary { background:var(--red); color:#fff; }
   .btn.ghost { background:transparent; border:1px solid var(--line-2); }
-  .btn.small { padding:8px 12px; font-size:13px; border-radius:8px; min-height:40px; }
+  .btn.small { padding:8px 12px; font-size:13px; border-radius:8px; min-height:44px; }
   .btn.danger { color:var(--bad); }
   .btn:disabled { opacity:.45; }
   .pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:600; background:var(--chip); color:var(--muted); white-space:nowrap; }
@@ -91,7 +100,7 @@
   .sect-title { display:flex; align-items:baseline; justify-content:space-between; margin:6px 2px 8px; }
   .sect-title h2 { font-size:19px; font-weight:700; letter-spacing:.02em; }
   .empty { padding:26px 16px; text-align:center; color:var(--muted); font-size:14px; }
-  .toast { position:fixed; left:50%; bottom:calc(84px + var(--safe-b)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-weight:600; font-size:14px; z-index:60; box-shadow:var(--shadow); opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; text-align:center; }
+  .toast { position:fixed; left:50%; bottom:calc(104px + var(--safe-b)); transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-weight:600; font-size:14px; z-index:60; box-shadow:var(--shadow); opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; text-align:center; }
   .toast.show { opacity:1; }
   .chips { display:flex; gap:8px; flex-wrap:wrap; }
   .choice { padding:9px 12px; border-radius:9px; border:1px solid var(--line-2); background:var(--surface); font-weight:600; font-size:14px; text-align:left; }
@@ -115,8 +124,15 @@
   .warnbar { background:var(--warn-bg); color:var(--warn); padding:10px 14px; font-size:13px; font-weight:600; border-bottom:1px solid var(--line); }
 
   /* ---------- sheets (replace browser pop-ups) ---------- */
-  .sheetwrap { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:flex; align-items:flex-end; }
-  .sheet { background:var(--bg); width:100%; max-height:88dvh; border-radius:16px 16px 0 0; display:flex; flex-direction:column; }
+  .sheetwrap { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:flex; align-items:flex-end; animation:dimIn .18s ease-out; }
+  .sheetwrap.out { animation:dimOut .16s ease-in forwards; }
+  .sheetwrap.out .sheet { animation:sheetOut .16s ease-in forwards; }
+  @keyframes dimIn { from { background:rgba(0,0,0,0); } to { background:rgba(0,0,0,.55); } }
+  @keyframes dimOut { to { background:rgba(0,0,0,0); } }
+  .sheet { background:var(--bg); width:100%; max-height:88dvh; border-radius:16px 16px 0 0; display:flex; flex-direction:column; animation:sheetIn .22s cubic-bezier(.2,.8,.2,1); }
+  .sheet::before { content:""; display:block; width:38px; height:4px; border-radius:2px; background:var(--line-2); margin:8px auto -4px; }
+  @keyframes sheetIn { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes sheetOut { to { transform:translateY(100%); } }
   .sheet .sh { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px 10px; }
   .sheet .sh h2 { font-size:21px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; }
   .sheet .sb { overflow-y:auto; padding:0 12px calc(16px + var(--safe-b)); }
@@ -129,7 +145,7 @@
   .noteline .t { flex:1; min-width:0; }
   .noteline .t small { display:block; color:var(--faint); font-size:11.5px; }
   .noteline button { border:none; background:var(--chip); color:var(--muted); font-size:12px; font-weight:600; border-radius:6px; padding:2px 10px; min-height:32px; }
-  .notegroup textarea { width:100%; min-height:72px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
+  .notegroup textarea { width:100%; min-height:72px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:16px; background:var(--surface-2); }
   .reasons { display:flex; flex-direction:column; gap:8px; }
   .reasons button { text-align:left; padding:12px 14px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); font-weight:600; font-size:15px; }
   .reasons button small { display:block; font-weight:500; font-size:12px; color:var(--muted); }
@@ -151,7 +167,7 @@
   .swipe .sw-actions button { width:92px; border:none; color:#fff; font-weight:700; font-size:14px; font-family:'Barlow Condensed',Arial,sans-serif; letter-spacing:.04em; text-transform:uppercase; }
   .swipe .sw-actions .sw-done { background:var(--good); }
   .swipe .sw-actions .sw-del { background:var(--red); }
-  .swipe .jobcard { position:relative; box-shadow:none; transition:transform .18s ease-out; touch-action:pan-y; will-change:transform; }
+  .swipe .jobcard { position:relative; box-shadow:none; transition:transform .18s ease-out, filter .08s ease; touch-action:pan-y; will-change:transform; }
   .swipe.dragging .jobcard { transition:none; }
   .jobcard { display:block; width:100%; text-align:left; background:var(--surface); border:none; border-radius:12px; box-shadow:var(--shadow); padding:0; overflow:hidden; color:inherit; }
   .jobcard .jc-body { padding:12px 14px 10px; }
@@ -179,7 +195,7 @@
   .jobtop .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .jobtop .brand { font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:12px; letter-spacing:.16em; }
   .jobtop .brand b { color:var(--red); }
-  .jobtop .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 11px; font-weight:600; font-size:13px; white-space:nowrap; min-height:36px; }
+  .jobtop .tbtn { background:#232328; color:#FAFAFA; border:1px solid #33333A; border-radius:8px; padding:6px 12px; font-weight:600; font-size:13px; white-space:nowrap; min-height:40px; }
   .jobtop h1 { font-size:22px; font-weight:700; line-height:1.05; margin-top:4px; }
   .jobtop .sub { color:#A9A9B3; font-size:12.5px; margin-top:1px; }
   .carchips { display:flex; gap:8px; overflow-x:auto; padding:6px 0 2px; scrollbar-width:none; }
@@ -213,7 +229,7 @@
   .clockline.running .cl b { color:var(--good); }
   .clockline.paused { color:var(--warn); } .clockline.paused .cl b { color:var(--warn); }
   .clockline.idle .cl { color:var(--muted); }
-  .clockline .btn.small { min-height:36px; padding:6px 12px; }
+  .clockline .btn.small { min-height:44px; padding:6px 14px; }
   .phase { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:10px; border:2px solid transparent; }
   .phase.current { border-color:var(--focus); box-shadow:0 0 0 3px rgba(239,26,45,.12), var(--shadow); }
   .band { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; width:100%; text-align:left; background:var(--band); color:var(--band-text); padding:9px 13px 8px; border:none; border-radius:0; }
@@ -243,11 +259,11 @@
   .phasebtn { flex:1; padding:13px; border:none; border-radius:10px; font-size:15.5px; font-weight:700; background:var(--red); color:#fff; }
   .phase.done .phasebtn { background:var(--good-bg); color:var(--good); }
   .phasebtn.wait { background:var(--chip); color:var(--muted); }
-  .notebtn { flex:0 0 auto; border:1px solid var(--line-2); background:var(--surface); color:var(--muted); font-weight:600; font-size:13.5px; border-radius:10px; padding:0 14px; }
+  .notebtn { flex:0 0 auto; border:1px solid var(--line-2); background:var(--surface); color:var(--muted); font-weight:600; font-size:13.5px; border-radius:10px; padding:0 14px; min-height:46px; }
   .notebtn.has { border-color:var(--warn); color:var(--warn); background:var(--warn-bg); }
   .listnotes { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:12px 13px; }
   .listnotes label { font-size:12.5px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
-  .listnotes textarea { width:100%; min-height:80px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:15px; background:var(--surface-2); }
+  .listnotes textarea { width:100%; min-height:80px; border:1px solid var(--line-2); border-radius:9px; padding:10px; font-size:16px; background:var(--surface-2); }
 
   /* ---------- report ---------- */
   .report { max-width:640px; margin:0 auto; }
@@ -684,18 +700,32 @@ const $ = sel => document.querySelector(sel);
 const app = document.getElementById("app");
 let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
 function applyTheme(){ const r = document.documentElement; if (DB.theme === "light" || DB.theme === "dark") r.setAttribute("data-theme", DB.theme); else r.removeAttribute("data-theme"); }
-function go(screen, extra){ if (screen !== "job") releaseWake(); if (screen === "job" && extra && extra.jobId !== ui.jobId) { ui.open = new Set(); ui.closed = new Set(); } Object.assign(ui, {screen, sheet:false}, extra || {}); closeSheet(); render(); }
+const NAV_KEYS = ["screen","jobId","pane","histFilter","histDetail","clientId","clientEdit","editUser","clientQ","newjobFrom"];
+const navState = () => Object.fromEntries(NAV_KEYS.map(k => [k, ui[k]]));
+let navDir = "forward";
+function go(screen, extra, opts){
+  const o = opts || {}; if (screen !== "job") releaseWake();
+  if (screen === "job" && extra && extra.jobId !== ui.jobId) { ui.open = new Set(); ui.closed = new Set(); }
+  Object.assign(ui, {screen, sheet:false}, extra || {}); closeSheet(); ui.fresh = true; navDir = o.back ? "back" : "forward";
+  if (!o.back) { try { history.pushState({ ui:navState() }, ""); } catch(e){} }
+  render(); ui.fresh = false;
+}
+window.addEventListener("popstate", e => { const st = e.state && e.state.ui; if (!st) return; if ($("#sheet")) { closeSheet(); } if (st.screen !== "job") releaseWake(); Object.assign(ui, st, { sheet:false }); ui.fresh = true; navDir = "back"; render(); ui.fresh = false; });
+// scroll memory: a redraw of the same screen keeps its place; only a real navigation starts at the top
+function snapScroll(){ if (ui.fresh) return null; const m = $(".main"); const panes = {}; document.querySelectorAll(".pane").forEach(p => panes[p.dataset.code] = p.scrollTop); return { main: m ? m.scrollTop : 0, panes }; }
+function restoreScroll(sc){ if (!sc) { const m = $(".main"); if (m) { m.classList.add(navDir === "back" ? "enter-back" : "enter"); setTimeout(() => m.classList.remove("enter", "enter-back"), 220); } return; } const m = $(".main"); if (m) m.scrollTop = sc.main; document.querySelectorAll(".pane").forEach(p => { if (sc.panes[p.dataset.code] != null) p.scrollTop = sc.panes[p.dataset.code]; }); }
 let liveTimer = null; function setLive(fn){ clearInterval(liveTimer); liveTimer = fn ? setInterval(fn, 1000) : null; }
 let wake = null; async function requestWake(){ try { if ("wakeLock" in navigator && !wake) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); } } catch(e){} }
 function releaseWake(){ try { if (wake) { wake.release(); wake = null; } } catch(e){} }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ui.screen === "job") requestWake(); });
 
 // ---------- sheets (in-app replacements for prompt/confirm) ----------
-function closeSheet(){ const s = $("#sheet"); if (s) s.remove(); }
+function closeSheet(){ const s = $("#sheet"); if (!s) return; s.removeAttribute("id"); s.querySelectorAll("[id]").forEach(e => e.removeAttribute("id")); s.classList.add("out"); s.style.pointerEvents = "none"; setTimeout(() => s.remove(), 170); }
 function openSheet(title, bodyHtml, opts){
   closeSheet(); const o = opts || {};
   document.body.insertAdjacentHTML("beforeend", `<div class="sheetwrap" id="sheet"><div class="sheet"><div class="sh"><h2>${title}</h2><button class="btn small" id="sheetclose">${esc(o.closeLabel || "Cancel")}</button></div><div class="sb">${bodyHtml}</div></div></div>`);
-  const sheet = $("#sheet"); const close = () => { sheet.remove(); if (o.onClose) o.onClose(); };
+  const sheet = $("#sheet"); let closed = false;
+  const close = () => { if (closed) return; closed = true; sheet.removeAttribute("id"); sheet.querySelectorAll("[id]").forEach(e => e.removeAttribute("id")); sheet.classList.add("out"); sheet.style.pointerEvents = "none"; setTimeout(() => sheet.remove(), 170); if (o.onClose) o.onClose(); };
   $("#sheetclose").onclick = close; sheet.onclick = e => { if (e.target === sheet) close(); };
   return { el:sheet, close };
 }
@@ -740,13 +770,18 @@ function storageWarning(){
 
 // ---------- render root ----------
 function render(){
-  setLive(null);
+  setLive(null); const sc = snapScroll();
   if (!DB.ready) return renderSplash();
+  renderScreen(); restoreScroll(sc);
+}
+function renderScreen(){
   if (!DB.session) { if (DB.setupDone === false) renderSetup(); else renderLogin(); }
   else if (!me()) renderWaiting();
   else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings, clients:renderClients, client:renderClient })[ui.screen === "login" ? "home" : ui.screen]();
   const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
+// in-place redraws (same screen, keep the scroll position)
+const redraw = fn => { const sc = snapScroll(); fn(); restoreScroll(sc); };
 function topbar(title, sub, right){ return `<div class="topbar"><div class="row"><div><div class="brand"><b>3X</b> DETAILING · JOB BOARD</div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div style="display:flex;gap:6px;align-items:center">${right || ""}</div></div></div>`; }
 function wireNav(){ app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); }
 
@@ -805,21 +840,22 @@ function jobCard(job){
   const actions = (done ? "" : `<button class="sw-done" data-swdone="${job.id}">✓ Complete</button>`) + (canDel ? `<button class="sw-del" data-swdel="${job.id}">Delete</button>` : "");
   return `<div class="swipe" data-sw="${job.id}" data-w="${(done ? 0 : 92) + (canDel ? 92 : 0)}"><div class="sw-actions">${actions}</div><button class="jobcard ${done ? "done" : ""}" data-job="${job.id}"><div class="jc-body"><div class="jc-top"><div><h3>${esc(job.vehicle)}</h3><div class="jc-client">${esc(job.client)} · ${fmtDate(job.date)}</div></div><div class="eyebrow num">${p.d}/${p.t} phases</div></div><div class="jc-lists">${lists}</div><div class="jc-meta">${meta}</div></div><div class="bar"><i style="width:${p.pct}%"></i></div></button></div>`;
 }
+let openSwipe = null;
 function wireSwipes(){ // slide a job card left to reveal Complete / Delete
   app.querySelectorAll(".swipe").forEach(sw => {
     const card = sw.querySelector(".jobcard"); const W = +sw.dataset.w || 0; if (!W) return;
     let x0 = 0, y0 = 0, dx = 0, open = false, dragging = false, axis = null;
     const setX = v => { card.style.transform = `translateX(${v}px)`; };
-    const close = () => { open = false; setX(0); };
+    const close = () => { open = false; setX(0); if (openSwipe === close) openSwipe = null; };
     card.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; dx = 0; axis = null; dragging = false; });
     card.addEventListener("pointermove", e => {
       if (!e.buttons && e.pointerType === "mouse") return;
       const mx = e.clientX - x0, my = e.clientY - y0;
-      if (!axis) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; axis = Math.abs(mx) > Math.abs(my) ? "x" : "y"; if (axis === "x") { dragging = true; sw.classList.add("dragging"); try { card.setPointerCapture(e.pointerId); } catch(_){} } }
+      if (!axis) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; axis = Math.abs(mx) > Math.abs(my) ? "x" : "y"; if (axis === "x") { dragging = true; sw.classList.add("dragging"); if (openSwipe && openSwipe !== close) openSwipe(); try { card.setPointerCapture(e.pointerId); } catch(_){} } }
       if (axis !== "x") return; e.preventDefault();
       dx = Math.max(-W - 20, Math.min(0, (open ? -W : 0) + mx)); setX(dx);
     });
-    const end = () => { sw.classList.remove("dragging"); if (!dragging) { if (open) { close(); } return; } open = dx < -W / 2; setX(open ? -W : 0); setTimeout(() => { dragging = false; }, 0); };
+    const end = () => { sw.classList.remove("dragging"); if (!dragging) { if (open) { close(); } return; } open = dx < -W / 2; setX(open ? -W : 0); if (open) openSwipe = close; setTimeout(() => { dragging = false; }, 0); };
     card.addEventListener("pointerup", end); card.addEventListener("pointercancel", end);
     card.addEventListener("click", e => { if (dragging || open) { e.stopImmediatePropagation(); e.preventDefault(); if (open && !dragging) close(); } }, true);
   });
@@ -847,7 +883,8 @@ function openJob(id){ const job = DB.jobs.find(j => j.id === id); if (!job) retu
 function renderNewJob(){
   const u = me(); const nj = ui.newjob || (ui.newjob = { date: todayISO(), client:"", vehicle:"", serviceIds:[], leadId: u.role === "tech" ? (DB.users.find(x => x.role !== "tech") || u).id : u.id, techIds:[] });
   const people = DB.users; const lists = listsForServices(nj.serviceIds); const groups = [...new Set(SERVICES.map(s => s.group))];
-  app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" data-go="home">Cancel</button>`) +
+  const backTo = () => { const from = ui.newjobFrom && DB.jobs.find(j => j.id === ui.newjobFrom && j.status === "active"); ui.newjob = null; ui.newjobFrom = null; if (from) go("job", { jobId:from.id, pane:0 }, { back:true }); else go("home", null, { back:true }); };
+  app.innerHTML = topbar("New job", "One job per car. Pick every service this car is getting.", `<button class="tbtn" id="n_cancel_top">Cancel</button>`) +
    `<div class="main"><div class="stack">
     <div class="card" style="padding:14px"><div class="stack">
       <div class="field"><label>Client</label><button class="pick ${nj.client ? "set" : ""}" id="n_client">${nj.client ? esc(nj.client) : "Choose client"}<span class="chev">▾</span></button></div>
@@ -859,24 +896,24 @@ function renderNewJob(){
     <div class="sect-title"><h2>Services</h2><span class="pill">${lists.length} checklist${lists.length === 1 ? "" : "s"}</span></div>
     <div class="card" style="padding:12px"><div class="stack">${groups.map(g => `<div class="eyebrow">${esc(g)}</div><div class="chips">${SERVICES.filter(s => s.group === g).map(s => `<button class="choice ${nj.serviceIds.includes(s.id) ? "on" : ""}" data-svc="${s.id}">${esc(s.name)}<small>${esc(s.price)} · ${s.lists.map(c => LISTS[c].title).join(" + ")}${s.lists.some(c => LISTS[c].generic) ? " (timed only, no SOP yet)" : ""}</small></button>`).join("")}</div>`).join("")}</div></div>
     <div class="err" id="n_err"></div></div></div>
-   <div class="actionbar"><button class="narrow" data-go="home">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
-  wireNav();
+   <div class="actionbar"><button class="narrow" id="n_cancel">Cancel</button><button class="primary" id="n_go">Put this car on the board</button></div>`;
+  wireNav(); $("#n_cancel").onclick = backTo; $("#n_cancel_top").onclick = backTo;
   const readForm = () => { nj.date = $("#n_date").value || todayISO(); nj.leadId = $("#n_lead").value; };
-  $("#n_client").onclick = () => { readForm(); pickerSheet({ title:"Client", items:DB.clients.map(c => ({ label:c.name, sub:c.vehicles.length ? `${c.vehicles.length} vehicle${c.vehicles.length === 1 ? "" : "s"} on file` : "" })), placeholder:"Type a name…", newLabel:"new client", onPick: v => { if (v !== nj.client) nj.vehicle = ""; nj.client = v; renderNewJob(); } }); };
-  $("#n_vehicle").onclick = () => { readForm(); if (!nj.client) return; pickerSheet({ title:`${esc(nj.client)} · vehicle`, items:clientVehicles(nj.client).map(v => ({ label:v })), placeholder:"Type a make and model…", newLabel:"new vehicle", onPick: v => { nj.vehicle = v; renderNewJob(); } }); };
-  $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); renderNewJob(); };
-  app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; renderNewJob(); });
-  app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.svc; nj.serviceIds = nj.serviceIds.includes(id) ? nj.serviceIds.filter(x => x !== id) : [...nj.serviceIds, id]; renderNewJob(); });
+  $("#n_client").onclick = () => { readForm(); pickerSheet({ title:"Client", items:DB.clients.map(c => ({ label:c.name, sub:c.vehicles.length ? `${c.vehicles.length} vehicle${c.vehicles.length === 1 ? "" : "s"} on file` : "" })), placeholder:"Type a name…", newLabel:"new client", onPick: v => { if (v !== nj.client) nj.vehicle = ""; nj.client = v; redraw(renderNewJob); } }); };
+  $("#n_vehicle").onclick = () => { readForm(); if (!nj.client) return; pickerSheet({ title:`${esc(nj.client)} · vehicle`, items:clientVehicles(nj.client).map(v => ({ label:v })), placeholder:"Type a make and model…", newLabel:"new vehicle", onPick: v => { nj.vehicle = v; redraw(renderNewJob); } }); };
+  $("#n_lead").onchange = () => { readForm(); nj.techIds = nj.techIds.filter(id => id !== nj.leadId); redraw(renderNewJob); };
+  app.querySelectorAll("[data-tech]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.tech; nj.techIds = nj.techIds.includes(id) ? nj.techIds.filter(x => x !== id) : [...nj.techIds, id]; redraw(renderNewJob); });
+  app.querySelectorAll("[data-svc]").forEach(b => b.onclick = () => { readForm(); const id = b.dataset.svc; nj.serviceIds = nj.serviceIds.includes(id) ? nj.serviceIds.filter(x => x !== id) : [...nj.serviceIds, id]; redraw(renderNewJob); });
   $("#n_go").onclick = () => {
     readForm();
     if (!nj.client.trim() || !nj.vehicle.trim()) { $("#n_err").textContent = "Client and vehicle are required."; return; }
     if (!nj.serviceIds.length) { $("#n_err").textContent = "Pick at least one service."; return; }
     const job = { id:uid(), createdAt:Date.now(), date:nj.date, client:nj.client.trim(), vehicle:nj.vehicle.trim(), serviceIds:SERVICES.map(s => s.id).filter(id => nj.serviceIds.includes(id)), extraLists:[], leadId:nj.leadId, techIds:nj.techIds, arrivedAt:null, finishedAt:null, status:"active", notes:"", finishNote:"", lists:{} };
     listsForServices(job.serviceIds).forEach(c => job.lists[c] = { phases:{}, flags:{}, notes:"", runs:[] });
-    learnClient(job.client, job.vehicle); DB.jobs.push(job); saveJob(job); ui.newjob = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
+    learnClient(job.client, job.vehicle); DB.jobs.push(job); saveJob(job); ui.newjob = null; ui.newjobFrom = null; toast("On the board"); go("job", {jobId:job.id, pane:0});
   };
 }
-function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob"); }
+function anotherCar(job){ ui.newjob = { date:job.date, client:job.client, vehicle:"", serviceIds:[...job.serviceIds], leadId:job.leadId, techIds:[...job.techIds] }; go("newjob", { newjobFrom:job.id }); }
 
 // ---------- job runner ----------
 function renderJob(){
@@ -901,7 +938,7 @@ function renderJob(){
   function syncTabs(){ app.querySelectorAll("[data-pane]").forEach(b => b.classList.toggle("on", +b.dataset.pane === ui.pane)); }
   $("#arrive").onclick = () => {
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); saveJob(job); toast("Started " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client}` : " · all checklists running")); renderJob(); return; }
-    timeSheet({ title:"Arrival time", ts:job.arrivedAt, hint:"Every checklist's clock starts here.", onSave: ts => { const old = job.arrivedAt; job.arrivedAt = ts; jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job); saveJob(job); renderJob(); } });
+    timeSheet({ title:"Arrival time", ts:job.arrivedAt, hint:"Every checklist's clock starts here.", onSave: ts => { const old = job.arrivedAt; job.arrivedAt = ts; jobLists(job).forEach(c => { const r = runsOf(job, c); if (r.length && r[0].start === old) r[0].start = ts; }); ensureRuns(job); saveJob(job); redraw(renderJob); } });
   };
   panes.querySelectorAll(".pane").forEach(pane => wirePane(job, pane));
   $("#notesbtn").onclick = () => openNotes(job);
@@ -948,14 +985,16 @@ function refreshPane(job, code){
   wirePane(job, fresh);
 }
 function wirePane(job, pane){
-  pane.querySelectorAll("[data-toggle]").forEach(el => el.onclick = () => { const key = el.dataset.toggle; const [code, pi] = key.split(":"); const s = phaseStats(job, code)[+pi]; const open = ui.open.has(key) || (s.current && !ui.closed.has(key)); if (open) { ui.open.delete(key); if (s.current) ui.closed.add(key); } else { ui.open.add(key); ui.closed.delete(key); } refreshPane(job, code); });
+  pane.querySelectorAll("[data-toggle]").forEach(el => el.onclick = () => { const key = el.dataset.toggle; const [code, pi] = key.split(":"); const s = phaseStats(job, code)[+pi]; const open = ui.open.has(key) || (s.current && !ui.closed.has(key)); if (open) { ui.open.delete(key); if (s.current) ui.closed.add(key); } else { ui.open.add(key); ui.closed.delete(key); }
+    const top0 = el.getBoundingClientRect().top; refreshPane(job, code);
+    const fresh = $("#panes").querySelector(`[data-toggle="${key}"]`); if (fresh) { const p = fresh.closest(".pane"); p.scrollTop += fresh.getBoundingClientRect().top - top0; } });
   pane.querySelectorAll("[data-phase]").forEach(el => el.onclick = () => {
     const [code, pi] = el.dataset.phase.split(":"); const L = job.lists[code]; const ph = LISTS[code].phases[+pi];
     if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; saveJob(job); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); saveJob(job); refreshPane(job, code); } }); return; }
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
     if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); } else { saveJob(job); refreshPane(job, code); }
-    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 60);
+    const next = $("#panes").querySelector(`.pane[data-code="${code}"] .phase.current`); if (next) setTimeout(() => next.scrollIntoView({ behavior:"smooth", block:"start" }), 160);
   });
   pane.querySelectorAll("[data-note]").forEach(el => el.onclick = () => { const [code, pi] = el.dataset.note.split(":"); phaseNoteSheet(job, code, +pi); });
   pane.querySelectorAll("[data-pause]").forEach(el => el.onclick = () => openPause(job, el.dataset.pause));
@@ -978,7 +1017,7 @@ function openNotes(job){
   ui.sheet = "notes"; const notes = allNotes(job).filter(n => n.kind === "step"); const lists = jobLists(job);
   const s = openSheet(`Notes · ${esc(job.vehicle)}`, `<div class="notegroup"><h3><em>Job</em> notes</h3><textarea id="jobnotes" placeholder="Client requests, issues, where the key went, anything Sam should know…">${esc(job.notes)}</textarea></div>
       <div class="notegroup"><h3><em>Phase</em> notes & flags</h3>${notes.length ? notes.map(n => `<div class="noteline"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}<small>${esc(n.step)}</small></div><button data-editflag="${n.code}:${n.k}">edit</button></div>`).join("") : `<div class="noteline"><div class="t" style="color:var(--muted)">Nothing yet. Use "Note / flag" on any phase.</div></div>`}</div>
-      ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}`, { closeLabel:"Done", onClose: () => { ui.sheet = false; renderJob(); } });
+      ${lists.map(code => `<div class="notegroup"><h3><em>${esc(LISTS[code].title)}</em> notes</h3><textarea data-snotes="${code}" placeholder="Wins, procedure ideas, vehicle issues…">${esc(job.lists[code].notes)}</textarea></div>`).join("")}`, { closeLabel:"Done", onClose: () => { ui.sheet = false; redraw(renderJob); } });
   $("#jobnotes").oninput = e => { job.notes = e.target.value; saveJob(job); };
   s.el.querySelectorAll("[data-snotes]").forEach(ta => ta.oninput = () => { job.lists[ta.dataset.snotes].notes = ta.value; saveJob(job); });
   s.el.querySelectorAll("[data-editflag]").forEach(b => b.onclick = () => { const [code, k] = b.dataset.editflag.split(":"); const L = job.lists[code]; ui.sheet = false; textSheet({ title:"Edit note", value:L.flags[k] || "", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; saveJob(job); openNotes(job); } }); });
@@ -1014,7 +1053,7 @@ function renderReport(){
        pausesInPhase(pauses, st, pi).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join(""); }).join("")}
      ${pausesInPhase(pauses, st, -1).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused after the last phase · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join("")}</div>`;
   }).join("");
-  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" data-go="home">Board</button>`) +
+  app.innerHTML = topbar("Job report", job.status === "done" ? "Signed off" : "In progress", `<button class="tbtn" id="r_more">⋯</button><button class="tbtn" data-go="home">Board</button>`) +
    `<div class="main"><div class="report stack">
      <div class="head"><h2>${esc(job.vehicle)}</h2><div class="sub">${esc(job.client)} · ${fmtDate(job.date)}</div>
        <div class="kv num"><b>Service</b><span>${jobServiceNames(job).map(esc).join(" + ")}</span><b>Lead</b><span>${esc(userName(job.leadId))}${job.techIds.length ? " · with " + job.techIds.map(userName).map(esc).join(", ") : ""}</span><b>Arrived</b><span>${fmtT(job.arrivedAt)}</span><b>Finished</b><span>${fmtT(job.finishedAt)}</span><b>On site</b><span style="color:var(--red);font-weight:700">${fmtD(jobTotal(job))}</span></div>
@@ -1023,14 +1062,15 @@ function renderReport(){
      <div class="card"><div class="lt"><h3>Notes</h3><div class="d num">${notes.length}</div></div>${notes.length ? notes.map(n => `<div class="noteline" style="padding:8px 12px"><div class="w">${esc(n.where)}</div><div class="t">${esc(n.what)}${n.step ? `<small>${esc(n.step)}</small>` : ""}</div></div>`).join("") : `<div class="note" style="color:var(--muted)">No notes on this job.</div>`}</div>
      ${rows}
      ${job.status === "active" ? `<button class="btn ghost" id="backtojob">Back to checklists</button>` : ""}
-     <button class="btn ghost" id="copyfull">Copy full phase timing as text</button>
-     ${job.status === "done" && isOwner() ? `<button class="btn ghost danger" id="deljob">Delete this job</button>` : ""}
    </div></div><div class="actionbar"><button class="narrow" id="copy">Copy</button><button class="primary" id="share">Share summary</button></div>`;
   wireNav(); const text = summaryText(job);
   $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title:`3X Job — ${job.vehicle}`, text }); return; } catch(e){ if (e.name === "AbortError") return; } } copyText(text); };
-  $("#copy").onclick = () => copyText(text); $("#copyfull").onclick = () => copyText(fullText(job));
-  const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0});
-  const d = $("#deljob"); if (d) d.onclick = () => confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed from this phone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { deleteJob(job.id); go("history"); } });
+  $("#copy").onclick = () => copyText(text);
+  const b = $("#backtojob"); if (b) b.onclick = () => go("job", {jobId:job.id, pane:0}, { back:true });
+  $("#r_more").onclick = () => { const sh = openSheet("More", `<div class="notegroup"><div class="reasons"><button id="m_full">Copy full phase timing as text</button>${job.status === "active" ? `<button id="m_back">Back to checklists</button>` : ""}${job.status === "done" && ["owner","lead"].includes((me() || {}).role) ? `<button id="m_del" style="color:var(--bad)">Delete this job</button>` : ""}</div></div>`);
+    $("#m_full").onclick = () => { sh.close(); copyText(fullText(job)); };
+    const mb = $("#m_back"); if (mb) mb.onclick = () => { sh.close(); go("job", {jobId:job.id, pane:0}, { back:true }); };
+    const md = $("#m_del"); if (md) md.onclick = () => { sh.close(); confirmSheet({ title:"Delete this job?", text:"The job and all of its timing are removed for everyone. This cannot be undone.", ok:"Delete job", danger:true, onOk: () => { deleteJob(job.id); go("history", null, { back:true }); } }); }; };
 }
 async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Copied — paste it into a text"); } catch(e){ textSheet({ title:"Copy this", value:t, saveLabel:"Done", allowEmpty:true, onSave: () => {} }); } }
 
@@ -1061,8 +1101,8 @@ function renderHistory(){
      ${groupRows("By team lead", Object.entries(byLead).map(([id, jobs]) => [id, { name:userName(id), jobs }]).sort((a,b) => b[1].jobs.length - a[1].jobs.length), "lead:")}
      <div class="sect-title"><h2>All finished jobs</h2></div>${done.length ? done.map(jobCard).join("") : `<div class="card empty">Nothing finished yet.</div>`}
    </div></div>`;
-  wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; ui.histDetail = null; renderHistory(); });
-  app.querySelectorAll("[data-det]").forEach(b => b.onclick = () => { ui.histDetail = ui.histDetail === b.dataset.det ? null : b.dataset.det; renderHistory(); });
+  wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; redraw(renderHistory); });
+  app.querySelectorAll("[data-det]").forEach(b => b.onclick = () => { ui.histDetail = ui.histDetail === b.dataset.det ? null : b.dataset.det; redraw(renderHistory); });
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job)); wireSwipes();
 }
 
@@ -1087,7 +1127,7 @@ function renderClients(){
      <div class="card">${hits.map(row).join("") || `<div class="empty">${q ? "No client matches that." : "No clients yet."}</div>`}</div>
      ${canEditClients() ? `<button class="btn ghost" id="c_new">＋ New client</button>` : ""}
    </div></div>`;
-  wireNav(); const cq = $("#cq"); cq.oninput = () => { ui.clientQ = cq.value; const pos = cq.selectionStart; renderClients(); const n = $("#cq"); n.focus(); n.setSelectionRange(pos, pos); };
+  wireNav(); const cq = $("#cq"); cq.oninput = () => { ui.clientQ = cq.value; const pos = cq.selectionStart; redraw(renderClients); const n = $("#cq"); n.focus(); n.setSelectionRange(pos, pos); };
   app.querySelectorAll("[data-client]").forEach(b => b.onclick = () => go("client", { clientId:b.dataset.client, clientEdit:false }));
   const nb = $("#c_new"); if (nb) nb.onclick = () => textSheet({ title:"New client", placeholder:"Full name", saveLabel:"Create", onSave: async name => { const id = slug(name) + "-" + Date.now().toString(36).slice(-3); const nc = { id, name:name.trim(), phone:"", vehicles:[], source:"app", createdAt:Date.now() }; DB.clients.push(nc); try { await setDoc(doc(fdb, "clients", id), nc); go("client", { clientId:id, clientEdit:true }); } catch(e){ toast("Could not save: " + (e.code || e.message)); } } });
 }
@@ -1122,20 +1162,20 @@ function renderClient(){
   wireNav();
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job)); wireSwipes();
   const save = async patch => { try { await updateDoc(doc(fdb, "clients", c.id), patch); Object.assign(c, patch); } catch(e){ toast("Could not save: " + (e.code || e.message)); throw e; } };
-  const eb = $("#c_edit"); if (eb) eb.onclick = () => { ui.clientEdit = true; renderClient(); };
+  const eb = $("#c_edit"); if (eb) eb.onclick = () => { ui.clientEdit = true; redraw(renderClient); };
   if (edit) {
-    $("#c_cancel").onclick = () => { ui.clientEdit = false; renderClient(); };
+    $("#c_cancel").onclick = () => { ui.clientEdit = false; redraw(renderClient); };
     $("#c_save").onclick = async () => {
       const name = $("#c_name").value.trim(); if (!name) { $("#c_err").textContent = "Name is required."; return; }
       const patch = { name, phone:$("#c_phone").value.trim(), address:$("#c_addr").value.trim(), partner:$("#c_partner").value.trim(), assistant:$("#c_assist").value.trim(), cadenceDays: +$("#c_cad").value || null, nextDue:$("#c_due").value || "", lastVisit:$("#c_last").value || (c.lastVisit || ""), notes:$("#c_notes").value.trim() };
       const old = c.name; try { await save(patch); } catch(e){ return; }
       if (old !== name) { const affected = DB.jobs.filter(j => j.client === old); affected.forEach(j => { j.client = name; saveJob(j); }); if (affected.length) toast(`Renamed on ${affected.length} job${affected.length === 1 ? "" : "s"} too`); }
-      ui.clientEdit = false; toast("Saved"); renderClient();
+      ui.clientEdit = false; toast("Saved"); redraw(renderClient);
     };
   }
-  app.querySelectorAll("[data-vedit]").forEach(b => b.onclick = () => { const i = +b.dataset.vedit; textSheet({ title:"Rename vehicle", value:c.vehicles[i], onSave: async v => { const vs = [...c.vehicles]; if (v) vs[i] = v; else vs.splice(i, 1); await save({ vehicles:vs }); renderClient(); } }); });
-  app.querySelectorAll("[data-vrm]").forEach(b => b.onclick = () => { const i = +b.dataset.vrm; confirmSheet({ title:"Remove vehicle?", text:`${esc(c.vehicles[i])} comes off ${esc(c.name)}'s file. Past jobs keep it.`, ok:"Remove", danger:true, onOk: async () => { const vs = [...c.vehicles]; vs.splice(i, 1); await save({ vehicles:vs }); renderClient(); } }); });
-  const av = $("#c_addv"); if (av) av.onclick = () => textSheet({ title:"Add vehicle", placeholder:"Make and model, e.g. Porsche 911 GT3", saveLabel:"Add", onSave: async v => { await save({ vehicles:[...(c.vehicles || []), v] }); renderClient(); } });
+  app.querySelectorAll("[data-vedit]").forEach(b => b.onclick = () => { const i = +b.dataset.vedit; textSheet({ title:"Rename vehicle", value:c.vehicles[i], onSave: async v => { const vs = [...c.vehicles]; if (v) vs[i] = v; else vs.splice(i, 1); await save({ vehicles:vs }); redraw(renderClient); } }); });
+  app.querySelectorAll("[data-vrm]").forEach(b => b.onclick = () => { const i = +b.dataset.vrm; confirmSheet({ title:"Remove vehicle?", text:`${esc(c.vehicles[i])} comes off ${esc(c.name)}'s file. Past jobs keep it.`, ok:"Remove", danger:true, onOk: async () => { const vs = [...c.vehicles]; vs.splice(i, 1); await save({ vehicles:vs }); redraw(renderClient); } }); });
+  const av = $("#c_addv"); if (av) av.onclick = () => textSheet({ title:"Add vehicle", placeholder:"Make and model, e.g. Porsche 911 GT3", saveLabel:"Add", onSave: async v => { await save({ vehicles:[...(c.vehicles || []), v] }); redraw(renderClient); } });
 }
 
 // ---------- team (accounts live in the shared database) ----------
@@ -1158,9 +1198,9 @@ function renderTeam(){
      <div class="sect-title"><h2>Add a team member</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div class="grid2"><div class="field"><label>Name</label><input id="t_name" placeholder="Joe Blow"></div><div class="field"><label>Role</label><select id="t_role"><option value="lead">Team Lead</option><option value="tech">Technician</option></select></div></div><div class="grid2"><div class="field"><label>Username</label><input id="t_user" autocapitalize="none" placeholder="joe"></div><div class="field"><label>Password</label><input id="t_pw" type="password" placeholder="6+ characters"></div></div><div class="err" id="t_err"></div><button class="btn primary" id="t_add">Add member</button></div></div>
      <div class="hint">Accounts are shared. Anyone you add can sign in on any phone with the app link.</div></div></div>`;
-  wireNav(); app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; renderTeam(); });
+  wireNav(); app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { ui.editUser = ui.editUser === b.dataset.edit ? null : b.dataset.edit; redraw(renderTeam); });
   if (ed) { const u = DB.users.find(x => x.id === ed);
-    $("#e_save").onclick = async () => { const name = $("#e_name").value.trim(), role = $("#e_role").value; if (!name) { $("#e_err").textContent = "Name is required."; return; } try { await updateDoc(doc(fdb, "users", u.id), { name, ...(u.role !== "owner" ? { role } : {}) }); u.name = name; if (u.role !== "owner") u.role = role; ui.editUser = null; toast("Saved"); renderTeam(); } catch(e){ $("#e_err").textContent = authErr(e); } };
+    $("#e_save").onclick = async () => { const name = $("#e_name").value.trim(), role = $("#e_role").value; if (!name) { $("#e_err").textContent = "Name is required."; return; } try { await updateDoc(doc(fdb, "users", u.id), { name, ...(u.role !== "owner" ? { role } : {}) }); u.name = name; if (u.role !== "owner") u.role = role; ui.editUser = null; toast("Saved"); redraw(renderTeam); } catch(e){ $("#e_err").textContent = authErr(e); } };
     $("#e_pw").onclick = () => textSheet({ title:`New password · ${esc(u.name)}`, placeholder:"At least 6 characters", saveLabel:"Set password", hint:"Sets a fresh sign-in for this username. Their old password stops working.", onSave: async pw => { if (pw.length < 6) { toast("Password needs 6+ characters"); return; } try { const r = await createCrewAccount(u.name, u.username, u.role, pw); const batch = writeBatch(fdb); batch.set(doc(fdb, "users", r.uid), { name:u.name, username:u.username, role:u.role, active:true, authEmail:r.email, createdAt:Date.now(), replaces:u.id }); batch.update(doc(fdb, "users", u.id), { active:false, replacedBy:r.uid }); batch.set(doc(fdb, "usernames", u.username), { uid:r.uid, authEmail:r.email, n:r.n }); await batch.commit(); DB.jobs.filter(j => j.leadId === u.id || j.techIds.includes(u.id)).forEach(j => { if (j.leadId === u.id) j.leadId = r.uid; j.techIds = j.techIds.map(x => x === u.id ? r.uid : x); saveJob(j); }); ui.editUser = null; toast("Password reset"); } catch(e){ toast(authErr(e)); } } });
     const rm = $("#e_rm"); if (rm) rm.onclick = () => confirmSheet({ title:`Remove ${esc(u.name)}?`, text:"They won't be able to sign in anywhere. Their past jobs stay on record.", ok:"Remove", danger:true, onOk: async () => { try { await updateDoc(doc(fdb, "users", u.id), { active:false }); ui.editUser = null; toast("Removed"); } catch(e){ toast(authErr(e)); } } }); }
   $("#t_add").onclick = async () => {
@@ -1182,8 +1222,8 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v5.5 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
-  wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); renderSettings(); });
+     <div class="hint">3X Job Board v6 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+  wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
   const im = $("#import"); if (im) im.onclick = offerLegacyUpload;
@@ -1210,14 +1250,14 @@ function onRemote(){
   const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if ($("#sheet") || typing) { pendingRemote = true; return; }
   pendingRemote = false;
-  if (ui.screen === "job") { const tops = {}; document.querySelectorAll(".pane").forEach(p => tops[p.dataset.code] = p.scrollTop); renderJob(); document.querySelectorAll(".pane").forEach(p => { if (tops[p.dataset.code] != null) p.scrollTop = tops[p.dataset.code]; }); }
+  if (ui.screen === "job") redraw(renderJob);
   else if (ui.screen !== "newjob") render();
 }
 document.addEventListener("focusout", () => { if (pendingRemote) setTimeout(() => { if (pendingRemote && !$("#sheet")) onRemote(); }, 300); });
 function subscribe(){
   unsubUsers = onSnapshot(collection(fdb, "users"), snap => { DB.users = snap.docs.map(d => ({ id:d.id, ...d.data() })); DB.usersReady = true; checkReady(); }, e => toast("Team sync error: " + e.code));
   unsubJobs = onSnapshot(query(collection(fdb, "jobs"), orderBy("createdAt")), snap => { DB.jobs = snap.docs.map(d => d.data()); DB.jobsReady = true; checkReady(); }, e => toast("Job sync error: " + e.code));
-  unsubClients = onSnapshot(collection(fdb, "clients"), snap => { DB.clients = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name)); DB.clientsReady = true; if (!snap.metadata.fromCache && isOwner() && !DB.seeding && (!DB.clients.length || (DB.seedVersion || 0) < SEED_VERSION)) { DB.seeding = true; seedClients().then(n => { DB.seedVersion = SEED_VERSION; save(); if (n) toast(`Client list updated · ${n} client${n === 1 ? "" : "s"}`); }).catch(e => { DB.seeding = false; toast("Client list: " + (e.code || e.message)); }); } if (ui.screen === "newjob" && !$("#sheet")) renderNewJob(); if ((ui.screen === "clients" || (ui.screen === "client" && !ui.clientEdit)) && !$("#sheet")) render(); }, e => toast("Client sync error: " + e.code));
+  unsubClients = onSnapshot(collection(fdb, "clients"), snap => { DB.clients = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name)); DB.clientsReady = true; if (!snap.metadata.fromCache && isOwner() && !DB.seeding && (!DB.clients.length || (DB.seedVersion || 0) < SEED_VERSION)) { DB.seeding = true; seedClients().then(n => { DB.seedVersion = SEED_VERSION; save(); if (n) toast(`Client list updated · ${n} client${n === 1 ? "" : "s"}`); }).catch(e => { DB.seeding = false; toast("Client list: " + (e.code || e.message)); }); } if (ui.screen === "newjob" && !$("#sheet")) redraw(renderNewJob); if ((ui.screen === "clients" || (ui.screen === "client" && !ui.clientEdit)) && !$("#sheet")) render(); }, e => toast("Client sync error: " + e.code));
 }
 function unsubscribe(){ if (unsubUsers) unsubUsers(); if (unsubJobs) unsubJobs(); if (unsubClients) unsubClients(); unsubUsers = unsubJobs = unsubClients = null; DB.users = []; DB.jobs = []; DB.clients = []; DB.usersReady = DB.jobsReady = DB.clientsReady = false; }
 function checkReady(){
@@ -1228,7 +1268,7 @@ function checkReady(){
 }
 
 // ---------- boot ----------
-applyTheme(); renderSplash();
+applyTheme(); renderSplash(); try { history.replaceState({ ui:navState() }, ""); } catch(e){}
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 onAuthStateChanged(auth, async user => {
   if (user) { DB.session = { userId:user.uid }; DB.ready = false; renderSplash("Loading your board…"); unsubscribe(); subscribe(); }
