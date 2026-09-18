@@ -121,6 +121,25 @@
   .pickitem b { display:block; font-size:15.5px; }
   .pickitem small { color:var(--muted); font-size:12px; }
   .pickitem.new { border-color:var(--red); } .pickitem.new b { color:var(--red); }
+  .ckcar .ckhead { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 6px; }
+  .ckcar .ckt { background:none; border:none; text-align:left; padding:0; color:inherit; min-height:0; }
+  .ckcar .ckt h3 { font-size:20px; font-weight:700; line-height:1.05; }
+  .ckcar .ckt .s { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .ckline { display:flex; align-items:center; gap:8px; padding:8px 10px 8px 14px; border-top:1px solid var(--line); }
+  .ckline .ckmain { flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:none; border:none; text-align:left; padding:0; color:inherit; }
+  .ckline .ckmain b { display:block; font-family:'Barlow Condensed',Arial,sans-serif; font-weight:700; letter-spacing:.03em; text-transform:uppercase; font-size:15px; }
+  .ckline .ckmain small { display:block; color:var(--muted); font-size:12px; }
+  .ckline .dot { flex:0 0 10px; height:10px; border-radius:50%; background:var(--faint); }
+  .ckline.run .dot { background:var(--good); box-shadow:0 0 0 3px var(--good-bg); }
+  .ckline.pause .dot { background:var(--warn); box-shadow:0 0 0 3px var(--warn-bg); }
+  .ckline.done .dot { background:var(--good); }
+  .ckline.pause .ckmain small { color:var(--warn); }
+  .ckline .btn.small { flex:0 0 auto; min-width:78px; }
+  .ckchips { display:flex; gap:5px; flex:0 0 auto; }
+  .chip { width:38px; height:38px; border-radius:50%; border:2px solid var(--line-2); background:var(--surface); font-family:'Barlow Condensed',Arial,sans-serif; font-weight:800; font-size:13px; color:var(--muted); min-height:38px; padding:0; }
+  .chip.on { background:var(--red); border-color:var(--red); color:#fff; }
+  .ckfoot { display:flex; gap:8px; padding:8px 14px 12px; border-top:1px solid var(--line); }
+  .clockline .who { display:block; font-size:12px; color:var(--muted); font-weight:500; }
   .kvrow { display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:14.5px; padding:4px 0; border-bottom:1px solid var(--line); }
   .kvrow:last-of-type { border-bottom:none; }
   .kvrow b { color:var(--muted); font-weight:600; font-size:13px; }
@@ -625,6 +644,34 @@ function listPausedSince(job, code){ const r = runsOf(job, code); return (r.leng
 function ensureRuns(job){ if (!job.arrivedAt) return; jobLists(job).forEach(c => { const r = runsOf(job, c); if (!r.length) r.push({ start:job.arrivedAt, end:null }); }); }
 function pauseList(job, code, reason){ const r = runsOf(job, code); const last = r[r.length-1]; if (last && last.end == null) { last.end = Date.now(); last.reason = reason; } }
 function resumeList(job, code){ const r = runsOf(job, code); if (!r.length || r[r.length-1].end != null) r.push({ start:Date.now(), end:null }); }
+// --- who is on a checklist: each person is on at most one checklist at a time ---
+const workersOf = (job, code) => job.lists[code].workers || (job.lists[code].workers = []);
+const workLogOf = (job, code) => job.lists[code].workLog || (job.lists[code].workLog = []);
+function leaveList(job, code, uid, reason){ // returns true if the list was auto-paused
+  const w = workersOf(job, code); const i = w.indexOf(uid); if (i < 0) return false; w.splice(i, 1);
+  workLogOf(job, code).forEach(e => { if (e.uid === uid && e.end == null) e.end = Date.now(); });
+  if (!w.length && listRunning(job, code) && !job.finishedAt) { pauseList(job, code, reason || "Nobody on this checklist"); return true; }
+  return false;
+}
+function joinList(job, code, uid){
+  const w = workersOf(job, code); if (!w.includes(uid)) { w.push(uid); workLogOf(job, code).push({ uid, start:Date.now(), end:null }); }
+  if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); adoptSetup(job); }
+  if (!listRunning(job, code) && listProgress(job, code).d < listProgress(job, code).t) resumeList(job, code);
+}
+function claim(uid, job, code){ // move a person onto this checklist; whatever they leave pauses if it is left empty
+  const touched = new Set([job]);
+  DB.jobs.filter(j => j.status === "active").forEach(j => jobLists(j).forEach(c => { if ((j.id !== job.id || c !== code) && workersOf(j, c).includes(uid)) { leaveList(j, c, uid, "Working on another checklist"); touched.add(j); } }));
+  joinList(job, code, uid); touched.forEach(j => saveJob(j));
+}
+function unclaim(uid, job, code){ leaveList(job, code, uid, "Nobody on this checklist"); saveJob(job); }
+function clearWorkers(job, code){ const w = workersOf(job, code); w.splice(0); workLogOf(job, code).forEach(e => { if (e.end == null) e.end = Date.now(); }); }
+function workedBy(job, code){ const t = {}; workLogOf(job, code).forEach(e => { t[e.uid] = (t[e.uid] || 0) + ((e.end || job.finishedAt || Date.now()) - e.start); }); return Object.entries(t).sort((a,b) => b[1] - a[1]).map(([uid, ms]) => ({ uid, ms })); }
+function carStatus(job){
+  const lists = jobLists(job); if (job.status === "done") return { cls:"good", text:"Done" }; if (!job.arrivedAt) return { cls:"", text:"Not started" };
+  const open = lists.filter(c => listProgress(job, c).d < listProgress(job, c).t); if (!open.length) return { cls:"good", text:"All phases done" };
+  const running = open.filter(c => listRunning(job, c)).length;
+  if (running === open.length) return { cls:"good", text:"Running" }; if (running === 0) return { cls:"warn", text:"Paused" }; return { cls:"warn", text:"Partial" };
+}
 function listPauses(job, code){ const r = runsOf(job, code); const out = []; const endCap = job.finishedAt || Date.now(); r.forEach((run, i) => { if (run.end == null) return; const next = r[i+1]; const to = next ? next.start : endCap; if (to > run.end) out.push({ from:run.end, to, ms:to - run.end, reason:run.reason || "", open:!next && !job.finishedAt }); }); return out; }
 function listActiveTotal(job, code){ if (!job.arrivedAt) return null; return activeBetween(runsOf(job, code), job.arrivedAt, job.finishedAt || Date.now()); }
 function listPausedTotal(job, code){ return listPauses(job, code).reduce((a,p) => a + p.ms, 0); }
@@ -813,7 +860,7 @@ function render(){
 function renderScreen(){
   if (!DB.session) { if (DB.setupDone === false) renderSetup(); else renderLogin(); }
   else if (!me()) renderWaiting();
-  else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings, clients:renderClients, client:renderClient })[ui.screen === "login" ? "home" : ui.screen]();
+  else ({ home:renderHome, newjob:renderNewJob, job:renderJob, report:renderReport, history:renderHistory, team:renderTeam, settings:renderSettings, clients:renderClients, client:renderClient, clocks:renderClocks })[ui.screen === "login" ? "home" : ui.screen]();
   const w = storageWarning(); if (w) app.insertAdjacentHTML("afterbegin", w);
 }
 // in-place redraws (same screen, keep the scroll position)
@@ -904,7 +951,7 @@ function renderHome(){
   const ini = u.name.split(" ").map(x => x[0]).join("").slice(0,2).toUpperCase();
   app.innerHTML = topbar("Job board", new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}), `<span class="who"><i>${esc(ini)}</i>${esc(u.name.split(" ")[0])}</span><button class="tbtn" data-go="settings">⚙</button>`) +
     `<div class="main"><div class="stack">
-      <div class="sect-title"><h2>Active jobs</h2><span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div>
+      <div class="sect-title"><h2>Active jobs</h2><div style="display:flex;gap:8px;align-items:center">${active.length ? `<button class="btn small" data-go="clocks" style="background:var(--ink);color:#fff">⏱ Clocks</button>` : ""}<span class="pill">${active.length} car${active.length === 1 ? "" : "s"}</span></div></div>
       ${active.length ? active.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "No cars on the board. Start a job when you pull up." : "Loading jobs…"}</div>`}
       <div class="sect-title" style="margin-top:8px"><h2>Recent</h2><div style="display:flex;gap:6px"><button class="btn small ghost" data-go="clients">Clients</button><button class="btn small ghost" data-go="history">History & stats</button></div></div>
       ${recent.length ? recent.map(jobCard).join("") : `<div class="card empty">${DB.jobsReady ? "Finished jobs show up here with their timing." : "Loading…"}</div>`}
@@ -958,7 +1005,7 @@ function renderJob(){
   const lists = jobLists(job); const p = jobProgress(job); if (ui.pane >= lists.length) ui.pane = 0;
   const crew = `${esc(job.client)} · ${fmtDate(job.date)} · ${esc(userName(job.leadId))}${job.techIds.length ? " + " + job.techIds.map(userName).map(esc).join(", ") : ""}`;
   app.innerHTML = `
-   <div class="jobtop"><div class="row top"><button class="backbtn" id="topback"><span>‹</span> Back</button><div style="display:flex;gap:6px"><button class="tbtn" id="anothercar">+ Car</button></div></div>
+   <div class="jobtop"><div class="row top"><button class="backbtn" id="topback"><span>‹</span> Back</button><div style="display:flex;gap:6px"><button class="tbtn" data-go="clocks">⏱ Clocks</button><button class="tbtn" id="anothercar">+ Car</button></div></div>
      ${active.length > 1 ? `<div class="carchips">${active.map(j => `<button class="carchip ${j.id === job.id ? "on" : ""}" data-switch="${j.id}"><i>●</i> ${esc(j.vehicle)}<small class="num">${jobProgress(j).pct}%</small></button>`).join("")}</div><div class="sub">${crew}</div>` : `<h1>${esc(job.vehicle)}</h1><div class="sub">${crew}</div>`}
      <div class="stats"><button class="st" id="arrive"><div class="k">Arrived</div><div class="v ${job.arrivedAt ? "" : "red"} num">${job.arrivedAt ? fmtT(job.arrivedAt) : "Tap to start"}</div></button><div class="st"><div class="k">On site</div><div class="v num" data-live="total">${fmtD(jobTotal(job))}</div></div><div class="st"><div class="k">Phases</div><div class="v num" id="prog">${p.d}<span style="font-size:13px;color:#8E8E99">/${p.t}</span></div></div></div></div>
    <div class="main noscroll">
@@ -991,7 +1038,7 @@ function renderPane(job, code){
   const pz = listPausedSince(job, code); const running = listRunning(job, code);
   const clock = !job.arrivedAt ? `<div class="clockline idle"><div class="cl"><b>Clock</b>starts when you tap Arrived</div></div>`
     : job.finishedAt ? "" : pz ? `<div class="clockline paused"><div class="cl"><b>❚❚ Paused</b><span data-live-clock="${code}">paused ${fmtD(Date.now() - pz.end)}${pz.reason ? " · " + esc(pz.reason) : ""}</span></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`
-    : running ? `<div class="clockline running"><div class="cl"><b>● Running</b><span data-live-clock="${code}">${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · " + fmtD(listPausedTotal(job, code)) + " paused" : ""}</span></div><button class="btn small" data-pause="${code}">Pause</button></div>`
+    : running ? `<div class="clockline running"><div class="cl"><b>● Running</b><span data-live-clock="${code}">${fmtD(listActiveTotal(job, code))} active${listPausedTotal(job, code) ? " · " + fmtD(listPausedTotal(job, code)) + " paused" : ""}</span>${workersOf(job, code).length ? `<div class="who">on it: ${workersOf(job, code).map(userName).map(n => esc(n.split(" ")[0])).join(", ")}</div>` : ""}</div><button class="btn small" data-pause="${code}">Pause</button></div>`
     : `<div class="clockline idle"><div class="cl"><b>Clock stopped</b></div><button class="btn small primary" data-resume="${code}">Resume</button></div>`;
   return `<div class="pane" data-code="${code}">
    <div class="panehead"><div><div class="eyebrow">${S.sop ? "3XD " + code : "Timed service"}</div><h2>${esc(S.title)}</h2></div><div class="c num">${lp.d}/${lp.t} phases · ${fmtD(listSpan(job, code))}</div></div>
@@ -1029,6 +1076,7 @@ function wirePane(job, pane){
     if (L.phases[pi]) { timeSheet({ title:`${esc(ph[0])} · done at`, ts:L.phases[pi], hint:"Change the completion time, or undo the mark.", undoLabel:"Undo this phase", onSave: ts => { L.phases[pi] = ts; saveJob(job); refreshPane(job, code); }, onUndo: () => { delete L.phases[pi]; ui.open.delete(code+":"+pi); saveJob(job); refreshPane(job, code); } }); return; }
     if (!job.arrivedAt) { job.arrivedAt = Date.now(); ensureRuns(job); toast("Started " + fmtT(job.arrivedAt)); }
     const ts = Date.now(); L.phases[pi] = ts; ui.open.delete(code+":"+pi); ui.closed.delete(code+":"+(+pi+1));
+    if (Object.keys(L.phases).length === LISTS[code].phases.length) clearWorkers(job, code);
     if (+pi === 0 && hasSharedSetup(code)) { const n = markSetupEverywhere(ts, job); if (n) toast(`Unload & Setup also marked on ${n} other checklist${n === 1 ? "" : "s"} for ${job.client}`); DB.jobs.filter(j => j.status === "active" && j.date === job.date).forEach(j => saveJob(j)); jobLists(job).forEach(c => refreshPane(job, c)); }
     else if (ph[1] === CLOSEOUT_PHASE) { const n = markCloseoutEverywhere(ts, job); if (n) toast(`Close-out also marked on ${n} other checklist${n === 1 ? "" : "s"} for this car`); saveJob(job); jobLists(job).forEach(c => refreshPane(job, c)); }
     else { saveJob(job); refreshPane(job, code); }
@@ -1047,9 +1095,10 @@ function phaseNoteSheet(job, code, pi){
   s.el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const k = b.dataset.k; s.close(); textSheet({ title:"Note", label: k.endsWith("_g") ? `<em>${esc(ph[0])}</em> · general` : "Step", value:L.flags[k] || "", placeholder:"Anything worth remembering — a reminder, an issue, a client request…", onSave: v => { if (v) L.flags[k] = v; else delete L.flags[k]; saveJob(job); refreshPane(job, code); } }); });
 }
 const PAUSE_REASONS = ["Working on another checklist", "Waiting on client / access", "Weather", "Break / lunch", "Supplies or equipment", "Redo / fixing an issue"];
-function openPause(job, code){
+function openPause(job, code, after){
+  const done = after || (() => refreshPane(job, code));
   const s = openSheet(`Pause · ${esc(LISTS[code].title)}`, `<div class="notegroup"><h3><em>Why</em> is this checklist paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div><div class="hint">The clock stops for this checklist only. Phase timers freeze until you tap Resume.</div>`);
-  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); saveJob(job); toast(LISTS[code].title + " paused"); refreshPane(job, code); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
+  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); const doPause = r => { pauseList(job, code, r); saveJob(job); toast(LISTS[code].title + " paused"); done(); }; if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: doPause }); else doPause(reason); });
 }
 function openNotes(job){
   ui.sheet = "notes"; const notes = allNotes(job).filter(n => n.kind === "step"); const lists = jobLists(job);
@@ -1064,7 +1113,7 @@ function finishJob(job){
   const p = jobProgress(job);
   const done = () => {
     if (!job.arrivedAt) { job.arrivedAt = job.createdAt; ensureRuns(job); }
-    job.finishedAt = Date.now(); job.status = "done"; jobLists(job).forEach(c => { const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
+    job.finishedAt = Date.now(); job.status = "done"; jobLists(job).forEach(c => { clearWorkers(job, c); const r = runsOf(job, c); const last = r[r.length-1]; if (last && last.end == null) last.end = job.finishedAt; });
     saveJob(job); toast("Signed off · " + fmtD(jobTotal(job))); go("report", {jobId: job.id}, { replace: ui.screen === "job" && ui.jobId === job.id });
     const n = DB.jobs.filter(j => j.status === "done").length; if (n > 0 && n % 5 === 0 && DB.nudged !== n) { DB.nudged = n; save(); setTimeout(() => confirmSheet({ title:"Back up your data", text:`${n} jobs finished on this phone. Everything lives here until the sync exists — take 10 seconds to export a backup.`, ok:"Export backup now", onOk: exportBackup }), 600); }
   };
@@ -1085,7 +1134,9 @@ function renderReport(){
   const notes = allNotes(job); const ov = overruns(job);
   const rows = jobLists(job).map(code => {
     const S = LISTS[code]; const st = phaseStats(job, code); const lp = listProgress(job, code); const pauses = listPauses(job, code); const pt = listPausedTotal(job, code);
+    const wb = workedBy(job, code);
     return `<div class="card"><div class="lt"><h3>${esc(S.title)}</h3><div class="d num">${lp.d} of ${lp.t} phases · ${fmtD(listActiveTotal(job, code))} active${pt ? `<br><span class="pill warn">paused ${fmtD(pt)}</span>` : ""}</div></div>
+     ${wb.length ? `<div class="note" style="padding-top:0;color:var(--muted)">Worked by ${wb.map(x => `${esc(userName(x.uid))} ${fmtD(x.ms)}`).join(" · ")}</div>` : ""}
      ${timelineBar(job, code)}
      ${S.phases.map((ph, pi) => { const s = st[pi]; return `<div class="prow ${s.complete ? "" : "miss"} ${s.over ? "over" : ""}"><div class="n"><b><em>${esc(ph[0])}</em>${esc(ph[1])}</b><small class="num">${s.complete ? `${fmtT(s.startAt)} → ${fmtT(s.endAt)}` : "✗ not done"}${s.target ? ` · target ~${s.target} min` : ""}</small></div><div class="r num">${s.complete ? fmtD(s.duration) : "—"}${s.over ? `<small>ran long</small>` : ""}</div></div>` +
        pausesInPhase(pauses, st, pi).map(p => `<div class="prow pause"><div class="n"><b>❚❚ Paused · ${esc(p.reason || "no reason given")}</b><small class="num">${fmtT(p.from)} → ${p.open ? "…" : fmtT(p.to)}</small></div><div class="r num">−${fmtD(p.ms)}</div></div>`).join(""); }).join("")}
@@ -1142,6 +1193,47 @@ function renderHistory(){
   wireNav(); app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { ui.histFilter = b.dataset.f; redraw(renderHistory); });
   app.querySelectorAll("[data-det]").forEach(b => b.onclick = () => { ui.histDetail = ui.histDetail === b.dataset.det ? null : b.dataset.det; redraw(renderHistory); });
   app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job)); wireSwipes();
+}
+
+// ---------- clocks: every car and checklist, pause / resume / who is on it ----------
+function crewOf(job){ const ids = [job.leadId, ...(job.techIds || [])]; const meId = (me() || {}).id; if (meId && !ids.includes(meId)) ids.push(meId); return ids.map(id => DB.users.find(u => u.id === id)).filter(Boolean); }
+const initials = u => u.name.split(" ").map(x => x[0]).join("").slice(0, 2).toUpperCase();
+function renderClocks(){
+  const active = DB.jobs.filter(j => j.status === "active").sort((a,b) => a.createdAt - b.createdAt);
+  const anyRunning = active.some(j => jobLists(j).some(c => listRunning(j, c))), anyPaused = active.some(j => j.arrivedAt && jobLists(j).some(c => !listRunning(j, c) && listProgress(j, c).d < listProgress(j, c).t));
+  const line = (job, c, i) => { const lp = listProgress(job, c); const done = lp.d === lp.t; const running = listRunning(job, c); const pz = listPausedSince(job, c); const w = workersOf(job, c);
+    const status = done ? `✓ done · ${fmtD(listSpan(job, c))}` : !job.arrivedAt ? "not started" : running ? `<span data-ck="${job.id}:${c}">${fmtD(listActiveTotal(job, c))} active</span>` : pz ? `<span data-ck="${job.id}:${c}">paused ${fmtD(Date.now() - pz.end)}</span>${pz.reason ? ` · ${esc(pz.reason)}` : ""}` : "stopped";
+    return `<div class="ckline ${done ? "done" : running ? "run" : job.arrivedAt ? "pause" : ""}">
+      <button class="ckmain" data-open="${job.id}:${i}"><span class="dot"></span><div><b>${esc(LISTS[c].short)}</b><small>${status}${w.length ? ` · ${w.map(userName).map(n => esc(n.split(" ")[0])).join(", ")}` : (job.arrivedAt && !done ? " · nobody on it" : "")}</small></div></button>
+      ${done || !job.arrivedAt ? "" : `<div class="ckchips">${crewOf(job).map(u => `<button class="chip ${w.includes(u.id) ? "on" : ""}" data-claim="${job.id}:${c}:${u.id}" title="${esc(u.name)}">${esc(initials(u))}</button>`).join("")}</div>
+      <button class="btn small ${running ? "" : "primary"}" data-toggle-clock="${job.id}:${c}">${running ? "Pause" : "Resume"}</button>`}
+    </div>`; };
+  app.innerHTML = topbar("Clocks", active.length ? `${active.length} car${active.length === 1 ? "" : "s"} on the board · tap your initials to say where you are` : "Nothing on the board", `${anyRunning ? `<button class="tbtn" id="ck_pause_all">Pause all</button>` : ""}${anyPaused ? `<button class="tbtn" id="ck_resume_all">Resume all</button>` : ""}`) +
+   `<div class="main"><div class="stack">
+    ${active.length ? active.map(job => { const st = carStatus(job); const lists = jobLists(job); const canPause = lists.some(c => listRunning(job, c)), canResume = job.arrivedAt && lists.some(c => !listRunning(job, c) && listProgress(job, c).d < listProgress(job, c).t);
+      return `<div class="card ckcar"><div class="ckhead"><button class="ckt" data-job="${job.id}"><h3>${esc(job.vehicle)}</h3><div class="s">${esc(job.client)}${job.arrivedAt ? ` · on site <span data-ck-total="${job.id}">${fmtD(jobTotal(job))}</span>` : ""}</div></button><span class="pill ${st.cls}">${esc(st.text)}</span></div>
+        ${job.arrivedAt ? "" : `<div style="padding:0 14px 10px"><button class="btn primary" data-arrive="${job.id}" style="width:100%">Arrived · start all clocks</button></div>`}
+        ${lists.map((c, i) => line(job, c, i)).join("")}
+        ${job.arrivedAt && (canPause || canResume) ? `<div class="ckfoot">${canPause ? `<button class="btn small ghost" data-pause-car="${job.id}">Pause car</button>` : ""}${canResume ? `<button class="btn small ghost" data-resume-car="${job.id}">Resume car</button>` : ""}</div>` : ""}</div>`; }).join("")
+    : `<div class="card empty">No cars on the board. Start a job when you pull up.</div>`}
+    <div class="hint">Your initials on a checklist = you're working it. Moving to another one pauses the one you left, unless someone else is still on it.</div>
+   </div></div>`;
+  wireNav();
+  const meId = (me() || {}).id; const after = () => redraw(renderClocks);
+  app.querySelectorAll("[data-open]").forEach(b => b.onclick = () => { const [id, i] = b.dataset.open.split(":"); go("job", { jobId:id, pane:+i }); });
+  app.querySelectorAll("[data-job]").forEach(b => b.onclick = () => openJob(b.dataset.job));
+  app.querySelectorAll("[data-arrive]").forEach(b => b.onclick = () => { const job = DB.jobs.find(j => j.id === b.dataset.arrive); job.arrivedAt = Date.now(); ensureRuns(job); const n = adoptSetup(job); saveJob(job); toast("Started " + fmtT(job.arrivedAt) + (n ? ` · Unload & Setup already done for ${job.client}` : "")); after(); });
+  app.querySelectorAll("[data-claim]").forEach(b => b.onclick = () => { const [id, c, uid] = b.dataset.claim.split(":"); const job = DB.jobs.find(j => j.id === id); if (workersOf(job, c).includes(uid)) { unclaim(uid, job, c); toast(`${userName(uid).split(" ")[0]} off ${LISTS[c].short}`); } else { claim(uid, job, c); toast(`${userName(uid).split(" ")[0]} on ${LISTS[c].short} · ${job.vehicle}`); } after(); });
+  app.querySelectorAll("[data-toggle-clock]").forEach(b => b.onclick = () => { const [id, c] = b.dataset.toggleClock.split(":"); const job = DB.jobs.find(j => j.id === id); if (listRunning(job, c)) openPause(job, c, after); else { resumeList(job, c); saveJob(job); toast(LISTS[c].title + " running"); after(); } });
+  app.querySelectorAll("[data-pause-car]").forEach(b => b.onclick = () => { const job = DB.jobs.find(j => j.id === b.dataset.pauseCar); pauseReasonSheet(`Pause car · ${esc(job.vehicle)}`, r => { jobLists(job).forEach(c => { if (listRunning(job, c)) pauseList(job, c, r); }); saveJob(job); toast(job.vehicle + " paused"); after(); }); });
+  app.querySelectorAll("[data-resume-car]").forEach(b => b.onclick = () => { const job = DB.jobs.find(j => j.id === b.dataset.resumeCar); jobLists(job).forEach(c => { if (!listRunning(job, c) && listProgress(job, c).d < listProgress(job, c).t) resumeList(job, c); }); saveJob(job); toast(job.vehicle + " running"); after(); });
+  const pa = $("#ck_pause_all"); if (pa) pa.onclick = () => pauseReasonSheet("Pause everything", r => { active.forEach(job => { let ch = false; jobLists(job).forEach(c => { if (listRunning(job, c)) { pauseList(job, c, r); ch = true; } }); if (ch) saveJob(job); }); toast("All clocks paused"); after(); });
+  const ra = $("#ck_resume_all"); if (ra) ra.onclick = () => { active.forEach(job => { let ch = false; if (!job.arrivedAt) return; jobLists(job).forEach(c => { if (!listRunning(job, c) && listProgress(job, c).d < listProgress(job, c).t) { resumeList(job, c); ch = true; } }); if (ch) saveJob(job); }); toast("All clocks running"); after(); };
+  setLive(() => { active.forEach(job => { const t = app.querySelector(`[data-ck-total="${job.id}"]`); if (t) t.textContent = fmtD(jobTotal(job)); jobLists(job).forEach(c => { const e = app.querySelector(`[data-ck="${job.id}:${c}"]`); if (!e) return; const pz = listPausedSince(job, c); e.textContent = listRunning(job, c) ? `${fmtD(listActiveTotal(job, c))} active` : pz ? `paused ${fmtD(Date.now() - pz.end)}` : e.textContent; }); }); });
+}
+function pauseReasonSheet(title, onPick){
+  const s = openSheet(title, `<div class="notegroup"><h3><em>Why</em> paused?</h3><div class="reasons">${PAUSE_REASONS.map(r => `<button data-reason="${esc(r)}">${esc(r)}</button>`).join("")}<button data-reason="__other">Other reason…</button></div></div>`);
+  s.el.querySelectorAll("[data-reason]").forEach(b => b.onclick = () => { const reason = b.dataset.reason; s.close(); if (reason === "__other") textSheet({ title:"Why paused?", placeholder:"Short reason", onSave: onPick }); else onPick(reason); });
 }
 
 // ---------- clients ----------
@@ -1260,7 +1352,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v6.4 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v7 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
