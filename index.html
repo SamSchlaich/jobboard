@@ -732,10 +732,11 @@ function appBack(){
   releaseWake(); Object.assign(ui, entry.ui, { sheet:false }); closeSheet(); ui.fresh = true; navDir = "back"; render(); ui.fresh = false;
   const m = $(".main"); if (m) m.scrollTop = entry.scroll.main; document.querySelectorAll(".pane").forEach(p => { if (entry.scroll.panes[p.dataset.code] != null) p.scrollTop = entry.scroll.panes[p.dataset.code]; });
 }
-// Edge swipe (from the left edge, rightwards) = one app step back. Handled in-app; no browser history is used, so Safari never shows its blank snapshot.
+// Edge swipe (from the left edge, rightwards) = straight back to the job board from anywhere. The Back button retraces your steps instead.
+function goBoard(){ if ($("#sheet")) closeSheet(); navStack.length = 0; if (ui.screen !== "home") go("home", null, { back:true }); }
 (() => { let sx = null, sy = null, fired = false;
   document.addEventListener("touchstart", e => { const t = e.touches[0]; sx = t.clientX <= 24 ? t.clientX : null; sy = t.clientY; fired = false; }, { passive:true });
-  document.addEventListener("touchmove", e => { if (sx == null || fired) return; const t = e.touches[0]; const dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); if (dx > 70 && dy < 50 && ui.screen !== "home") { fired = true; appBack(); } }, { passive:true });
+  document.addEventListener("touchmove", e => { if (sx == null || fired) return; const t = e.touches[0]; const dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); if (dx > 70 && dy < 50 && ui.screen !== "home") { fired = true; goBoard(); } }, { passive:true });
   document.addEventListener("touchend", () => { sx = null; }, { passive:true });
 })();
 // scroll memory: a redraw of the same screen keeps its place; only a real navigation starts at the top
@@ -1259,7 +1260,7 @@ function renderSettings(){
      <div class="card" style="padding:14px"><div class="stack"><div class="field"><label>Appearance</label><div class="seg">${["auto","light","dark"].map(t => `<button class="${DB.theme === t ? "on" : ""}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div><button class="btn ghost" id="signout">Sign out</button></div></div>
      <div class="sect-title"><h2>Data</h2></div>
      <div class="card" style="padding:14px"><div class="stack"><div style="color:var(--muted);font-size:13px">Jobs and accounts live in the shared 3X database and sync to every signed-in phone. Export a copy any time.</div>${isOwner() ? `<button class="btn ghost" id="reseed">Refresh client list from the master sheet</button>` : ""}<div class="grid2"><button class="btn" id="export">Export a copy</button>${localLegacy() && isOwner() ? `<button class="btn" id="import">Upload this phone's old jobs</button>` : `<button class="btn" disabled>Nothing to upload</button>`}</div></div></div>
-     <div class="hint">3X Job Board v6.3 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
+     <div class="hint">3X Job Board v6.4 · synced · checklists rev 09/11/2026 · works offline once opened · add to Home Screen for full-screen use</div></div></div>`;
   wireNav(); app.querySelectorAll("[data-theme]").forEach(b => b.onclick = () => { DB.theme = b.dataset.theme; save(); applyTheme(); redraw(renderSettings); });
   $("#signout").onclick = () => fbSignOut(auth);
   $("#export").onclick = exportBackup;
